@@ -439,12 +439,18 @@
   </div>
 
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 (function () {
   "use strict";
 
   // -------- config --------
   var STORAGE_ITEMS = "biaopan_items_v2";
+  var PDF_URL = "资源列表.pdf";
+
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  }
 
   var ICON_IDEA =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
@@ -507,22 +513,20 @@
       '<path d="M32 24.5l1.8 4.7 4.7 1.8-4.7 1.8-1.8 4.7-1.8-4.7-4.7-1.8 4.7-1.8z" fill="url(#ig3s)"/>' +
     '</svg>';
 
-  var DEFAULT_ITEMS = [
-    { url: "https://idea1-roan.vercel.app/",    name: "脑洞发散",       iconSvg: ICON_IDEA },
-    { url: "https://bluepoint2-0.vercel.app/",  name: "产品蓝图2.0生成", iconSvg: ICON_BLUEPRINT },
-    { url: "https://a-ipoint1.vercel.app/",     name: "AI功能设计",     iconSvg: ICON_AI }
-  ];
-  function cloneDefaults() {
-    return DEFAULT_ITEMS.map(function (it) {
-      return { id: uid(), url: it.url, name: it.name, iconSvg: it.iconSvg };
-    });
+  // Map pretty icons by name keyword so PDF-sourced items still get nice icons.
+  function matchIconByName(name) {
+    if (!name) return null;
+    if (/脑洞|idea/i.test(name)) return ICON_IDEA;
+    if (/蓝图|blueprint/i.test(name)) return ICON_BLUEPRINT;
+    if (/AI|智能/i.test(name)) return ICON_AI;
+    return null;
   }
-  function applyDefaultIcons(list) {
+  function applyIcons(list) {
     if (!Array.isArray(list)) return list;
     return list.map(function (it) {
       if (it && !it.iconSvg) {
-        var m = DEFAULT_ITEMS.find(function (d) { return d.url === it.url; });
-        if (m) return Object.assign({}, it, { iconSvg: m.iconSvg });
+        var svg = matchIconByName(it.name);
+        if (svg) return Object.assign({}, it, { iconSvg: svg });
       }
       return it;
     });
@@ -549,6 +553,100 @@
     return Math.abs(h);
   }
   function paletteFor(seed) { return PALETTES[hashCode(seed) % PALETTES.length]; }
+
+  // -------- PDF parsing (资源列表.pdf) --------
+  // Strategy: extract all text items with their (x,y) positions,
+  // group them into rows by Y (tolerance), locate the header row
+  // (by matching 名称/链接/描述), then assign each subsequent
+  // cell to the nearest header column by X-distance.
+  function loadFromPDF() {
+    if (!window.pdfjsLib) return Promise.resolve(null);
+    return fetch(PDF_URL, { cache: "no-store" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("PDF not found: " + r.status);
+        return r.arrayBuffer();
+      })
+      .then(function (buf) { return pdfjsLib.getDocument({ data: buf }).promise; })
+      .then(function (pdf) {
+        var tasks = [];
+        for (var p = 1; p <= pdf.numPages; p++) tasks.push(pdf.getPage(p));
+        return Promise.all(tasks).then(function (pages) {
+          return Promise.all(pages.map(function (pg) { return pg.getTextContent(); }));
+        });
+      })
+      .then(function (contents) {
+        var all = [];
+        contents.forEach(function (tc) {
+          tc.items.forEach(function (it) {
+            var s = (it.str || "").trim();
+            if (!s) return;
+            all.push({ x: it.transform[4], y: it.transform[5], str: s });
+          });
+        });
+        return parsePdfItems(all);
+      })
+      .catch(function (err) {
+        console.warn("[biaopan] PDF load failed:", err && err.message);
+        return null;
+      });
+  }
+
+  function parsePdfItems(all) {
+    if (!all.length) return [];
+    // Sort top→bottom (PDF y grows upward, so descending)
+    all.sort(function (a, b) { return b.y - a.y; });
+    // Group into rows; tolerance based on glyph height (~6pt)
+    var rows = [];
+    all.forEach(function (it) {
+      var row = null;
+      for (var i = rows.length - 1; i >= 0; i--) {
+        if (Math.abs(rows[i][0].y - it.y) < 5) { row = rows[i]; break; }
+      }
+      if (row) row.push(it); else rows.push([it]);
+    });
+    rows.forEach(function (r) { r.sort(function (a, b) { return a.x - b.x; }); });
+
+    // Locate header row and column anchors
+    var headerIdx = -1, nameX = 0, linkX = 0, descX = 0;
+    for (var i = 0; i < rows.length; i++) {
+      var joined = rows[i].map(function (c) { return c.str; }).join("");
+      if (/名称/.test(joined) && /链接/.test(joined) && /描述/.test(joined)) {
+        headerIdx = i;
+        rows[i].forEach(function (c) {
+          if (/名称/.test(c.str)) nameX = c.x;
+          else if (/链接/.test(c.str)) linkX = c.x;
+          else if (/描述/.test(c.str)) descX = c.x;
+        });
+        break;
+      }
+    }
+    if (headerIdx === -1) {
+      console.warn("[biaopan] PDF header row (名称/链接/描述) not found");
+      return [];
+    }
+
+    var out = [];
+    for (var r = headerIdx + 1; r < rows.length; r++) {
+      var cells = { name: [], url: [], desc: [] };
+      rows[r].forEach(function (c) {
+        var dn = Math.abs(c.x - nameX);
+        var dl = Math.abs(c.x - linkX);
+        var dd = Math.abs(c.x - descX);
+        var m = Math.min(dn, dl, dd);
+        if (m === dn) cells.name.push(c.str);
+        else if (m === dl) cells.url.push(c.str);
+        else cells.desc.push(c.str);
+      });
+      var name = cells.name.join("").trim();
+      var rawUrl = cells.url.join("").trim();
+      var desc = cells.desc.join("").trim();
+      if (!name || !rawUrl) continue;
+      var url = normalizeUrl(rawUrl);
+      if (!url) continue;
+      out.push({ id: uid(), url: url, name: name, desc: desc });
+    }
+    return out;
+  }
 
   // -------- dom --------
   var grid = document.getElementById("grid");
@@ -709,12 +807,14 @@
     var name = document.createElement("div");
     name.className = "name";
     name.textContent = item.name;
-    name.title = item.url;
+    name.title = item.desc || item.url;
     name.addEventListener("dblclick", function (e) {
       if (!edit) return;
       e.stopPropagation();
       startRename(item, name);
     });
+
+    el.title = item.desc || "";
 
     el.appendChild(icon);
     el.appendChild(del);
@@ -848,10 +948,29 @@
 
   // -------- boot --------
   tick(); setInterval(tick, 30000);
-  items = loadLocal();
-  items = items.length ? applyDefaultIcons(items) : cloneDefaults();
+
+  // Show cached list immediately so the page isn't blank while PDF loads.
+  items = applyIcons(loadLocal());
   refreshIdleStatus();
   render();
+
+  // Try PDF; on success (non-empty) it overwrites cache.
+  // On failure or empty result, keep whatever was already shown.
+  setStatus("正在读取资源列表…", "");
+  loadFromPDF().then(function (list) {
+    if (list && list.length) {
+      items = applyIcons(list);
+      saveLocal(items);
+      setStatus("已同步资源列表 · " + items.length + " 项", "ok");
+      render();
+    } else if (list && list.length === 0) {
+      // PDF parsed but no rows — keep previous content.
+      setStatus(items.length ? "资源列表为空 · 使用上次数据" : "资源列表为空", "ok");
+    } else {
+      // Fetch/parse failed — keep previous content.
+      setStatus(items.length ? "无法读取 PDF · 使用上次数据" : "无法读取 资源列表.pdf", "err");
+    }
+  });
 })();
 </script>
 </body>
