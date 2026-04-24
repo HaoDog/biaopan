@@ -606,23 +606,30 @@
 
   function parsePdfItems(all) {
     if (!all.length) return [];
-    // Sort top→bottom (PDF y grows upward, so descending)
+    // Sort top→bottom (PDF y grows upward, so descending y = top of page first)
     all.sort(function (a, b) { return b.y - a.y; });
-    // Group into rows; tolerance based on glyph height (~6pt)
+
+    // Group into rows: find the nearest existing row within tolerance,
+    // prefer minimum distance so cells with slightly different baselines
+    // still land in the same row. Tolerance 12pt handles most PDF tables.
+    var YTOL = 12;
     var rows = [];
     all.forEach(function (it) {
-      var row = null;
-      for (var i = rows.length - 1; i >= 0; i--) {
-        if (Math.abs(rows[i][0].y - it.y) < 5) { row = rows[i]; break; }
+      var best = null, bestDist = YTOL;
+      for (var i = 0; i < rows.length; i++) {
+        var d = Math.abs(rows[i][0].y - it.y);
+        if (d < bestDist) { bestDist = d; best = rows[i]; }
       }
-      if (row) row.push(it); else rows.push([it]);
+      if (best) best.push(it); else rows.push([it]);
     });
+    // Sort each row left→right
     rows.forEach(function (r) { r.sort(function (a, b) { return a.x - b.x; }); });
 
-    // Locate header row and column anchors
+    // Find header row containing 名称, 链接, 描述
     var headerIdx = -1, nameX = 0, linkX = 0, descX = 0;
     for (var i = 0; i < rows.length; i++) {
-      var joined = rows[i].map(function (c) { return c.str; }).join("");
+      var strs = rows[i].map(function (c) { return c.str; });
+      var joined = strs.join("");
       if (/名称/.test(joined) && /链接/.test(joined) && /描述/.test(joined)) {
         headerIdx = i;
         rows[i].forEach(function (c) {
@@ -634,7 +641,7 @@
       }
     }
     if (headerIdx === -1) {
-      console.warn("[biaopan] PDF header row (名称/链接/描述) not found");
+      console.warn("[biaopan] PDF 未找到标题行 (名称/链接/描述)，共", rows.length, "行文本");
       return [];
     }
 
@@ -655,9 +662,13 @@
       var desc = cells.desc.join("").trim();
       if (!name || !rawUrl) continue;
       var url = normalizeUrl(rawUrl);
-      if (!url) continue;
+      if (!url) {
+        console.warn("[biaopan] 跳过无效链接:", rawUrl, "名称:", name);
+        continue;
+      }
       out.push({ id: uid(), url: url, name: name, desc: desc });
     }
+    console.log("[biaopan] PDF 解析完成，共", out.length, "项:", out.map(function(i){return i.name;}));
     return out;
   }
 
