@@ -446,7 +446,7 @@
 
   // -------- config --------
   var STORAGE_ITEMS = "biaopan_items_v2";
-  var PDF_URL = "资源列表.pdf";
+  var PDF_URL = encodeURIComponent("资源列表") + ".pdf";
 
   if (window.pdfjsLib) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -513,6 +513,18 @@
       '<path d="M32 24.5l1.8 4.7 4.7 1.8-4.7 1.8-1.8 4.7-1.8-4.7-4.7-1.8 4.7-1.8z" fill="url(#ig3s)"/>' +
     '</svg>';
 
+  // Fallback list — used only when PDF can't be loaded AND localStorage is empty.
+  var DEFAULT_ITEMS = [
+    { url: "https://idea1-roan.vercel.app/",    name: "脑洞发散",     desc: "辅助发散脑洞",       iconSvg: ICON_IDEA },
+    { url: "https://bluepoint2-0.vercel.app/",  name: "产品蓝图",     desc: "产品蓝图2.0生成",    iconSvg: ICON_BLUEPRINT },
+    { url: "https://a-ipoint1.vercel.app/",     name: "AI功能设计",   desc: "提供如何融入AI的想法", iconSvg: ICON_AI }
+  ];
+  function cloneDefaults() {
+    return DEFAULT_ITEMS.map(function (it) {
+      return { id: uid(), url: it.url, name: it.name, desc: it.desc, iconSvg: it.iconSvg };
+    });
+  }
+
   // Map pretty icons by name keyword so PDF-sourced items still get nice icons.
   function matchIconByName(name) {
     if (!name) return null;
@@ -560,10 +572,10 @@
   // (by matching 名称/链接/描述), then assign each subsequent
   // cell to the nearest header column by X-distance.
   function loadFromPDF() {
-    if (!window.pdfjsLib) return Promise.resolve(null);
+    if (!window.pdfjsLib) return Promise.resolve({ ok: false, error: "PDF.js 未加载（CDN 被屏蔽？）" });
     return fetch(PDF_URL, { cache: "no-store" })
       .then(function (r) {
-        if (!r.ok) throw new Error("PDF not found: " + r.status);
+        if (!r.ok) throw new Error("HTTP " + r.status + " (" + PDF_URL + ")");
         return r.arrayBuffer();
       })
       .then(function (buf) { return pdfjsLib.getDocument({ data: buf }).promise; })
@@ -583,11 +595,12 @@
             all.push({ x: it.transform[4], y: it.transform[5], str: s });
           });
         });
-        return parsePdfItems(all);
+        return { ok: true, items: parsePdfItems(all) };
       })
       .catch(function (err) {
-        console.warn("[biaopan] PDF load failed:", err && err.message);
-        return null;
+        var msg = (err && err.message) || String(err);
+        console.warn("[biaopan] PDF load failed:", msg);
+        return { ok: false, error: msg };
       });
   }
 
@@ -949,26 +962,27 @@
   // -------- boot --------
   tick(); setInterval(tick, 30000);
 
-  // Show cached list immediately so the page isn't blank while PDF loads.
-  items = applyIcons(loadLocal());
+  // Show cached list (or defaults if first visit) immediately,
+  // so the page is never blank even if PDF fetch fails.
+  var cached = loadLocal();
+  if (cached.length) items = applyIcons(cached);
+  else items = cloneDefaults();
   refreshIdleStatus();
   render();
 
   // Try PDF; on success (non-empty) it overwrites cache.
   // On failure or empty result, keep whatever was already shown.
   setStatus("正在读取资源列表…", "");
-  loadFromPDF().then(function (list) {
-    if (list && list.length) {
-      items = applyIcons(list);
+  loadFromPDF().then(function (res) {
+    if (res.ok && res.items.length) {
+      items = applyIcons(res.items);
       saveLocal(items);
       setStatus("已同步资源列表 · " + items.length + " 项", "ok");
       render();
-    } else if (list && list.length === 0) {
-      // PDF parsed but no rows — keep previous content.
-      setStatus(items.length ? "资源列表为空 · 使用上次数据" : "资源列表为空", "ok");
+    } else if (res.ok) {
+      setStatus("资源列表为空 · 保留当前显示", "ok");
     } else {
-      // Fetch/parse failed — keep previous content.
-      setStatus(items.length ? "无法读取 PDF · 使用上次数据" : "无法读取 资源列表.pdf", "err");
+      setStatus("读取 PDF 失败：" + res.error + " · 保留当前显示", "err");
     }
   });
 })();
