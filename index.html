@@ -609,10 +609,8 @@
     // Sort top→bottom (PDF y grows upward, so descending y = top of page first)
     all.sort(function (a, b) { return b.y - a.y; });
 
-    // Group into rows: find the nearest existing row within tolerance,
-    // prefer minimum distance so cells with slightly different baselines
-    // still land in the same row. Tolerance 12pt handles most PDF tables.
-    var YTOL = 12;
+    // Group into rows: find the nearest existing row within tolerance.
+    var YTOL = 8;
     var rows = [];
     all.forEach(function (it) {
       var best = null, bestDist = YTOL;
@@ -622,27 +620,47 @@
       }
       if (best) best.push(it); else rows.push([it]);
     });
-    // Sort each row left→right
     rows.forEach(function (r) { r.sort(function (a, b) { return a.x - b.x; }); });
+    console.log("[biaopan] PDF 共", rows.length, "行");
 
-    // Find header row containing 名称, 链接, 描述
-    var headerIdx = -1, nameX = 0, linkX = 0, descX = 0;
+    // Find header row. PDF.js may split "名称" into "名" and "称" as separate
+    // items, so we match on the first character and also accept keywords.
+    var headerIdx = -1, nameX = -1, linkX = -1, descX = -1;
     for (var i = 0; i < rows.length; i++) {
-      var strs = rows[i].map(function (c) { return c.str; });
-      var joined = strs.join("");
-      if (/名称/.test(joined) && /链接/.test(joined) && /描述/.test(joined)) {
+      var joined = rows[i].map(function (c) { return c.str; }).join("");
+      if (/名/.test(joined) && /链|接/.test(joined) && /描|述/.test(joined)) {
         headerIdx = i;
+        // Pick the leftmost matching character for each column anchor.
         rows[i].forEach(function (c) {
-          if (/名称/.test(c.str)) nameX = c.x;
-          else if (/链接/.test(c.str)) linkX = c.x;
-          else if (/描述/.test(c.str)) descX = c.x;
+          if (/^名/.test(c.str) && nameX < 0) nameX = c.x;
+          else if (/^链/.test(c.str) && linkX < 0) linkX = c.x;
+          else if (/^描/.test(c.str) && descX < 0) descX = c.x;
         });
         break;
       }
     }
     if (headerIdx === -1) {
-      console.warn("[biaopan] PDF 未找到标题行 (名称/链接/描述)，共", rows.length, "行文本");
+      console.warn("[biaopan] 未找到表头行");
+      console.log("[biaopan] 所有行内容:", rows.map(function(r){return r.map(function(c){return c.str;}).join("|");}));
       return [];
+    }
+    console.log("[biaopan] 表头在第", headerIdx, "行, 列 X 坐标: name=" + nameX, "link=" + linkX, "desc=" + descX);
+
+    // Fallback: if any anchor still missing, split by X-gaps in the header row.
+    if (nameX < 0 || linkX < 0 || descX < 0) {
+      var hxs = rows[headerIdx].map(function(c){return c.x;});
+      var unique = Array.from(new Set(hxs)).sort(function(a,b){return a-b;});
+      if (unique.length >= 3) {
+        // Find 3 clusters by looking for the largest gaps
+        var gaps = [];
+        for (var k = 1; k < unique.length; k++) gaps.push({ gap: unique[k] - unique[k-1], idx: k });
+        gaps.sort(function(a,b){return b.gap - a.gap;});
+        var splits = [gaps[0].idx, gaps[1].idx].sort(function(a,b){return a-b;});
+        nameX = unique[0];
+        linkX = unique[splits[0]];
+        descX = unique[splits[1]];
+        console.log("[biaopan] 用间隙分析得到列坐标: name=" + nameX, "link=" + linkX, "desc=" + descX);
+      }
     }
 
     var out = [];
@@ -660,15 +678,13 @@
       var name = cells.name.join("").trim();
       var rawUrl = cells.url.join("").trim();
       var desc = cells.desc.join("").trim();
+      console.log("[biaopan] 行" + r + ": 名=" + JSON.stringify(name), "链=" + JSON.stringify(rawUrl), "描=" + JSON.stringify(desc));
       if (!name || !rawUrl) continue;
       var url = normalizeUrl(rawUrl);
-      if (!url) {
-        console.warn("[biaopan] 跳过无效链接:", rawUrl, "名称:", name);
-        continue;
-      }
+      if (!url) { console.warn("[biaopan] 跳过无效链接:", rawUrl); continue; }
       out.push({ id: uid(), url: url, name: name, desc: desc });
     }
-    console.log("[biaopan] PDF 解析完成，共", out.length, "项:", out.map(function(i){return i.name;}));
+    console.log("[biaopan] 解析完成，共", out.length, "项:", out.map(function(i){return i.name;}));
     return out;
   }
 
