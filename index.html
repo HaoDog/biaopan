@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>一人公司Vibcoding工具包v1.0</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%235eb4ff'/><stop offset='1' stop-color='%238a6ef2'/></linearGradient></defs><rect width='64' height='64' rx='16' fill='url(%23g)'/><path d='M32 16a16 16 0 0 0-16 16h5a11 11 0 0 1 22 0h5a16 16 0 0 0-16-16z' fill='white' opacity='.95'/><path d='M32 32l10-6' stroke='white' stroke-width='3' stroke-linecap='round'/><circle cx='32' cy='32' r='3' fill='white'/></svg>" />
+<style>
+  :root {
+    --bg-0: #ffffff;
+    --bg-1: #f5f5f7;
+    --bg-2: #ebebed;
+    --fg: #1d1d1f;
+    --fg-dim: #424245;
+    --muted: #86868b;
+    --accent: #007aff;
+    --accent-2: #5856d6;
+    --accent-3: #34c759;
+    --danger: #ff3b30;
+    --tile: rgba(255,255,255,0.72);
+    --tile-hover: rgba(255,255,255,0.95);
+    --tile-border: rgba(0,0,0,0.06);
+    --tile-border-hover: rgba(0,122,255,0.28);
+    --glass: rgba(255,255,255,0.78);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; min-height: 100%;
+    color: var(--fg);
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    user-select: none; -webkit-user-select: none;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    min-height: 100vh; overflow-x: hidden;
+    padding-bottom: 98px;
+    background:
+      radial-gradient(720px 520px at 12% 6%, rgba(0,122,255,0.10), transparent 65%),
+      radial-gradient(740px 540px at 88% 22%, rgba(88,86,214,0.09), transparent 65%),
+      radial-gradient(620px 500px at 50% 108%, rgba(52,199,89,0.07), transparent 65%),
+      linear-gradient(180deg, #ffffff, #f5f5f7);
+    background-attachment: fixed;
+  }
+
+  /* --------- header --------- */
+  #header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 34px 8px;
+    max-width: 1400px; margin: 0 auto;
+  }
+  #brand { display: flex; align-items: center; gap: 12px; }
+  #brand-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 18px rgba(0,122,255,0.28);
+  }
+  #brand-icon svg { width: 22px; height: 22px; }
+  #brand-title {
+    font-size: 17px; font-weight: 600; letter-spacing: 0.3px;
+    color: var(--fg); line-height: 1.1;
+  }
+  #brand-sub {
+    font-size: 10px; color: var(--muted); letter-spacing: 1.8px;
+    text-transform: uppercase; margin-top: 2px;
+  }
+  #clock {
+    display: flex; flex-direction: column; align-items: flex-end;
+  }
+  #clock .time {
+    font-size: 22px; font-weight: 500; letter-spacing: 1.5px;
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  #clock .date {
+    font-size: 11.5px; color: var(--muted); margin-top: 3px;
+    letter-spacing: 0.4px;
+  }
+
+  /* --------- grid --------- */
+  #grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: flex-start;
+    gap: 26px 30px;
+    padding: 36px 36px 40px;
+    max-width: 1400px; margin: 0 auto;
+  }
+
+  .tile {
+    position: relative;
+    width: 108px;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.22s cubic-bezier(.2,.8,.2,1);
+  }
+  .tile:hover { transform: translateY(-4px); }
+  .tile .icon {
+    width: 68px; height: 68px;
+    border-radius: 20px;
+    background: var(--tile);
+    border: 1px solid var(--tile-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow:
+      0 4px 14px rgba(0,0,0,0.06),
+      0 1px 3px rgba(0,0,0,0.04),
+      inset 0 1px 0 rgba(255,255,255,0.9);
+    overflow: hidden;
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  }
+  .tile:hover .icon {
+    background: var(--tile-hover);
+    border-color: var(--tile-border-hover);
+    box-shadow:
+      0 12px 28px rgba(0,0,0,0.12),
+      0 0 0 1px rgba(0,122,255,0.28),
+      inset 0 1px 0 rgba(255,255,255,0.95);
+  }
+  .tile .icon img { width: 42px; height: 42px; object-fit: contain; }
+  .tile .icon.custom { background: transparent; border: none; padding: 0; box-shadow: 0 6px 18px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.06); }
+  .tile:hover .icon.custom { box-shadow: 0 14px 32px rgba(0,0,0,0.16), 0 0 0 1px rgba(0,122,255,0.25); }
+  .tile .icon.custom svg { width: 100%; height: 100%; display: block; border-radius: inherit; }
+  .tile .icon .letter {
+    width: 100%; height: 100%;
+    color: white; font-weight: 700; font-size: 28px;
+    display: flex; align-items: center; justify-content: center;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    position: relative;
+  }
+  .tile .icon .letter::after {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.35), transparent 55%);
+    pointer-events: none;
+  }
+  .tile .name {
+    margin-top: 10px;
+    font-size: 12.5px;
+    color: var(--fg);
+    max-width: 100%;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  body.edit .tile { cursor: grab; }
+  body.edit .tile.dragging { opacity: 0.35; transform: scale(0.95); }
+  body.edit .tile .name { border-style: dashed; border-color: rgba(0,0,0,0.12); }
+  body.edit .tile .name:hover { border-color: var(--accent); color: var(--accent); }
+  body.edit .tile.drop-target .icon {
+    outline: 2px dashed var(--accent); outline-offset: 4px;
+    background: rgba(0,122,255,0.08);
+  }
+
+  .tile .del {
+    position: absolute;
+    top: -6px; right: 8px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--danger); color: white;
+    font-size: 14px; line-height: 22px; text-align: center;
+    display: none; cursor: pointer;
+    box-shadow: 0 3px 10px rgba(255,59,48,0.45);
+    z-index: 2;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .tile .del:hover {
+    transform: scale(1.12);
+    box-shadow: 0 4px 14px rgba(255,59,48,0.6);
+  }
+  body.edit .tile .del { display: block; }
+
+  .tile .name-input {
+    width: 106px;
+    background: white;
+    border: 1px solid var(--accent);
+    color: var(--fg);
+    font-size: 12.5px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    outline: none;
+    text-align: center;
+    margin-top: 8px;
+    font-family: inherit;
+    box-shadow: 0 0 0 3px rgba(0,122,255,0.15);
+  }
+
+  .add-tile {
+    width: 108px;
+    display: none;
+    flex-direction: column; align-items: center;
+    cursor: pointer;
+  }
+  body.edit .add-tile { display: flex; }
+  .add-tile .icon {
+    width: 68px; height: 68px;
+    border-radius: 20px;
+    border: 2px dashed rgba(0, 122, 255, 0.45);
+    color: var(--accent);
+    font-size: 30px; line-height: 1; font-weight: 300;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.22s cubic-bezier(.2,.8,.2,1);
+    background: transparent;
+  }
+  .add-tile:hover .icon {
+    background: rgba(0, 122, 255, 0.08);
+    border-color: var(--accent);
+    transform: rotate(90deg);
+  }
+  .add-tile .name {
+    margin-top: 10px; font-size: 12.5px; color: var(--muted);
+  }
+
+  /* --------- bottom bars --------- */
+  #hint, #status {
+    position: fixed;
+    bottom: 48px;
+    color: var(--fg-dim);
+    font-size: 12.5px;
+    background: var(--glass);
+    backdrop-filter: blur(14px) saturate(180%);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+  }
+  #hint { left: 22px; letter-spacing: 0.3px; color: var(--muted); }
+  #hint kbd {
+    display: inline-block;
+    padding: 1px 7px;
+    background: rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.10);
+    border-radius: 5px;
+    font-size: 11px; font-family: inherit;
+    margin: 0 2px;
+    color: var(--fg);
+    line-height: 1.4;
+  }
+  #status { right: 22px; }
+  body.edit #status {
+    color: var(--accent);
+    border-color: rgba(0,122,255,0.28);
+    box-shadow: 0 4px 16px rgba(0,122,255,0.18);
+  }
+  #status .dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--muted); margin-right: 8px; vertical-align: 1px;
+  }
+  #status.ok .dot {
+    background: var(--accent-3);
+    box-shadow: 0 0 10px rgba(52,199,89,0.55);
+  }
+  #status.err .dot {
+    background: var(--danger);
+    box-shadow: 0 0 10px rgba(255,59,48,0.55);
+  }
+
+  /* --------- footer --------- */
+  #footer {
+    position: fixed;
+    left: 0; right: 0; bottom: 14px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 2px;
+    pointer-events: none;
+  }
+
+  /* --------- empty state --------- */
+  .empty-hint {
+    margin: 80px auto 60px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 2;
+  }
+  .empty-hint .illust {
+    width: 104px; height: 104px; margin: 0 auto 22px;
+    border-radius: 28px;
+    background: linear-gradient(135deg, rgba(0,122,255,0.10), rgba(88,86,214,0.10));
+    border: 1px dashed rgba(0,122,255,0.35);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent);
+  }
+  .empty-hint .illust svg { width: 48px; height: 48px; }
+  .empty-hint b { color: var(--fg); font-weight: 600; }
+  .empty-hint kbd {
+    display: inline-block;
+    padding: 1px 8px;
+    background: rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.10);
+    border-radius: 5px;
+    font-size: 12px; font-family: inherit;
+    color: var(--fg);
+  }
+
+  /* --------- modal --------- */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.24);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.15s ease;
+  }
+  .modal-backdrop.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    background: linear-gradient(180deg, #ffffff, #fbfbfd);
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 16px;
+    padding: 24px 26px;
+    width: 440px;
+    max-width: calc(100vw - 40px);
+    box-shadow:
+      0 25px 60px rgba(0,0,0,0.18),
+      0 0 0 1px rgba(0,0,0,0.03);
+    animation: slideUp 0.2s cubic-bezier(.2,.8,.2,1);
+  }
+  @keyframes slideUp {
+    from { transform: translateY(14px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .modal h3 {
+    margin: 0 0 16px; font-size: 16px; font-weight: 600;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .modal h3::before {
+    content: ''; width: 4px; height: 16px;
+    background: linear-gradient(180deg, var(--accent), var(--accent-2));
+    border-radius: 2px;
+  }
+  .modal input[type=text], .modal input[type=password] {
+    width: 100%;
+    background: rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 10px;
+    color: var(--fg);
+    font-size: 14px;
+    padding: 11px 14px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    font-family: inherit;
+  }
+  .modal input:focus {
+    border-color: var(--accent);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(0,122,255,0.18);
+  }
+  .modal .row { margin-bottom: 12px; }
+  .modal .hint { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.5; }
+  .modal .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+  .btn {
+    border: none; border-radius: 10px;
+    padding: 9px 18px;
+    font-size: 14px; font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.15s, color 0.15s;
+    font-family: inherit;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #0a84ff, #0051d5);
+    color: #ffffff; font-weight: 600;
+    box-shadow: 0 4px 14px rgba(0,122,255,0.32);
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 22px rgba(0,122,255,0.42);
+  }
+  .btn-ghost { background: transparent; color: var(--fg-dim); }
+  .btn-ghost:hover { background: rgba(0,0,0,0.05); color: var(--fg); }
+
+  /* --------- responsive --------- */
+  @media (max-width: 640px) {
+    #header { padding: 16px 20px 6px; }
+    #grid { gap: 20px 22px; padding: 26px 18px 36px; }
+    .tile, .add-tile { width: 88px; }
+    .tile .icon, .add-tile .icon { width: 60px; height: 60px; border-radius: 17px; }
+    .tile .icon img { width: 36px; height: 36px; }
+    .tile .icon .letter { font-size: 24px; }
+    #hint { display: none; }
+    #clock .time { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+  <header id="header">
+    <div id="brand">
+      <div id="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M12 4a8 8 0 0 0-8 8h2.5a5.5 5.5 0 0 1 11 0H20a8 8 0 0 0-8-8z" fill="white" opacity=".95"/>
+          <path d="M12 12l4.5-2.6" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="12" cy="12" r="1.6" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <div id="brand-title">一人公司Vibcoding工具包v1.0</div>
+        <div id="brand-sub">DASHBOARD</div>
+      </div>
+    </div>
+    <div id="clock">
+      <div class="time" id="clock-time">--:--</div>
+      <div class="date" id="clock-date">加载中</div>
+    </div>
+  </header>
+
+  <div id="grid"></div>
+
+  <div id="hint">
+    <kbd>Q</kbd> 编辑 · <kbd>Ctrl</kbd>+<kbd>N</kbd> 添加 · <kbd>F11</kbd> 全屏
+  </div>
+  <div id="status"><span class="dot"></span><span id="status-text">加载中…</span></div>
+  <div id="footer">更多功能，敬请期待</div>
+
+  <div id="modal-add" class="modal-backdrop">
+    <div class="modal">
+      <h3 id="modal-title">添加链接</h3>
+      <div class="row">
+        <input id="m-url" type="text" placeholder="https://example.com" autocomplete="off" />
+        <div class="hint">输入网址，如 github.com 或 https://bilibili.com</div>
+      </div>
+      <div class="row">
+        <input id="m-name" type="text" placeholder="名称 (留空自动从网址提取)" autocomplete="off" />
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="m-cancel">取消</button>
+        <button class="btn btn-primary" id="m-ok">确定</button>
+      </div>
+    </div>
+  </div>
+
+
+<script>
+(function () {
+  "use strict";
+
+  // -------- config --------
+  var STORAGE_ITEMS = "biaopan_items_v2";
+
+  var ICON_IDEA =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+      '<defs><linearGradient id="ig1" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0" stop-color="#ffb199"/><stop offset="1" stop-color="#ff6b6b"/>' +
+      '</linearGradient></defs>' +
+      '<rect width="64" height="64" rx="16" fill="url(#ig1)"/>' +
+      '<path d="M32 17c-6.2 0-11.2 4.9-11.2 11 0 3.7 1.8 7 4.6 9v4.4c0 .9.7 1.6 1.6 1.6h10c.9 0 1.6-.7 1.6-1.6V37c2.8-2 4.6-5.3 4.6-9 0-6.1-5-11-11.2-11z" fill="#fff" opacity=".97"/>' +
+      '<rect x="26.6" y="43.6" width="10.8" height="2.3" rx="1.1" fill="#fff" opacity=".9"/>' +
+      '<rect x="28" y="47" width="8" height="2" rx="1" fill="#fff" opacity=".75"/>' +
+      '<circle cx="12" cy="18" r="1.8" fill="#fff" opacity=".85"/>' +
+      '<circle cx="52" cy="13" r="1.4" fill="#fff" opacity=".8"/>' +
+      '<circle cx="54" cy="46" r="1.6" fill="#fff" opacity=".78"/>' +
+      '<circle cx="10" cy="49" r="1.3" fill="#fff" opacity=".7"/>' +
+      '<path d="M51 22l1-2 1 2 2 1-2 1-1 2-1-2-2-1z" fill="#fff" opacity=".9"/>' +
+    '</svg>';
+
+  var ICON_BLUEPRINT =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+      '<defs><linearGradient id="ig2" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0" stop-color="#6aa9ff"/><stop offset="1" stop-color="#5a6de5"/>' +
+      '</linearGradient></defs>' +
+      '<rect width="64" height="64" rx="16" fill="url(#ig2)"/>' +
+      '<rect x="14" y="14" width="36" height="36" rx="4" fill="none" stroke="#fff" stroke-width="1.8" opacity=".95"/>' +
+      '<line x1="14" y1="26" x2="50" y2="26" stroke="#fff" stroke-width="1.2" opacity=".7"/>' +
+      '<line x1="14" y1="38" x2="50" y2="38" stroke="#fff" stroke-width="1.2" opacity=".7"/>' +
+      '<line x1="26" y1="14" x2="26" y2="50" stroke="#fff" stroke-width="1.2" opacity=".7"/>' +
+      '<line x1="38" y1="14" x2="38" y2="50" stroke="#fff" stroke-width="1.2" opacity=".7"/>' +
+      '<rect x="14" y="14" width="12" height="12" fill="#fff" opacity=".9"/>' +
+      '<rect x="26" y="26" width="12" height="12" fill="#fff" opacity=".55"/>' +
+      '<rect x="38" y="38" width="12" height="12" fill="#fff" opacity=".85"/>' +
+    '</svg>';
+
+  var ICON_AI =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+      '<defs>' +
+        '<linearGradient id="ig3" x1="0" y1="0" x2="1" y2="1">' +
+          '<stop offset="0" stop-color="#34d39b"/><stop offset="1" stop-color="#2ab0c5"/>' +
+        '</linearGradient>' +
+        '<linearGradient id="ig3s" x1="0" y1="0" x2="1" y2="1">' +
+          '<stop offset="0" stop-color="#34d39b"/><stop offset="1" stop-color="#2ab0c5"/>' +
+        '</linearGradient>' +
+      '</defs>' +
+      '<rect width="64" height="64" rx="16" fill="url(#ig3)"/>' +
+      '<rect x="20" y="20" width="24" height="24" rx="4" fill="#fff" opacity=".96"/>' +
+      '<g fill="#fff" opacity=".88">' +
+        '<rect x="15" y="24" width="5" height="2" rx="1"/>' +
+        '<rect x="15" y="31" width="5" height="2" rx="1"/>' +
+        '<rect x="15" y="38" width="5" height="2" rx="1"/>' +
+        '<rect x="44" y="24" width="5" height="2" rx="1"/>' +
+        '<rect x="44" y="31" width="5" height="2" rx="1"/>' +
+        '<rect x="44" y="38" width="5" height="2" rx="1"/>' +
+        '<rect x="24" y="15" width="2" height="5" rx="1"/>' +
+        '<rect x="31" y="15" width="2" height="5" rx="1"/>' +
+        '<rect x="38" y="15" width="2" height="5" rx="1"/>' +
+        '<rect x="24" y="44" width="2" height="5" rx="1"/>' +
+        '<rect x="31" y="44" width="2" height="5" rx="1"/>' +
+        '<rect x="38" y="44" width="2" height="5" rx="1"/>' +
+      '</g>' +
+      '<path d="M32 24.5l1.8 4.7 4.7 1.8-4.7 1.8-1.8 4.7-1.8-4.7-4.7-1.8 4.7-1.8z" fill="url(#ig3s)"/>' +
+    '</svg>';
+
+  var DEFAULT_ITEMS = [
+    { url: "https://idea1-roan.vercel.app/",    name: "脑洞发散",       iconSvg: ICON_IDEA },
+    { url: "https://bluepoint2-0.vercel.app/",  name: "产品蓝图2.0生成", iconSvg: ICON_BLUEPRINT },
+    { url: "https://a-ipoint1.vercel.app/",     name: "AI功能设计",     iconSvg: ICON_AI }
+  ];
+  function cloneDefaults() {
+    return DEFAULT_ITEMS.map(function (it) {
+      return { id: uid(), url: it.url, name: it.name, iconSvg: it.iconSvg };
+    });
+  }
+  function applyDefaultIcons(list) {
+    if (!Array.isArray(list)) return list;
+    return list.map(function (it) {
+      if (it && !it.iconSvg) {
+        var m = DEFAULT_ITEMS.find(function (d) { return d.url === it.url; });
+        if (m) return Object.assign({}, it, { iconSvg: m.iconSvg });
+      }
+      return it;
+    });
+  }
+
+  // -------- palette (letter fallback, hashed per-name) --------
+  var PALETTES = [
+    ["#5eb4ff", "#8a6ef2"],
+    ["#ff9966", "#ff5e62"],
+    ["#41d48e", "#2dd4bf"],
+    ["#f093fb", "#f5576c"],
+    ["#4facfe", "#00f2fe"],
+    ["#fa709a", "#fee140"],
+    ["#30cfd0", "#6d5dfc"],
+    ["#a18cd1", "#fbc2eb"],
+    ["#84fab0", "#8fd3f4"],
+    ["#ffecd2", "#fcb69f"],
+    ["#667eea", "#764ba2"],
+    ["#ee9ca7", "#ffdde1"]
+  ];
+  function hashCode(s) {
+    var h = 0; s = s || "";
+    for (var i = 0; i < s.length; i++) { h = (h << 5) - h + s.charCodeAt(i); h |= 0; }
+    return Math.abs(h);
+  }
+  function paletteFor(seed) { return PALETTES[hashCode(seed) % PALETTES.length]; }
+
+  // -------- dom --------
+  var grid = document.getElementById("grid");
+  var statusEl = document.getElementById("status");
+  var statusText = document.getElementById("status-text");
+  var modalAdd = document.getElementById("modal-add");
+  var mUrl = document.getElementById("m-url");
+  var mName = document.getElementById("m-name");
+  var mOk = document.getElementById("m-ok");
+  var mCancel = document.getElementById("m-cancel");
+  var mTitle = document.getElementById("modal-title");
+  var clockTime = document.getElementById("clock-time");
+  var clockDate = document.getElementById("clock-date");
+
+  // -------- state --------
+  var items = [];
+  var edit = false;
+  var modalMode = "add";
+  var editingId = null;
+
+  // -------- utils --------
+  function uid() { return "i_" + Math.random().toString(36).slice(2, 9); }
+  function setStatus(text, cls) {
+    statusText.textContent = text;
+    statusEl.classList.remove("ok", "err");
+    if (cls) statusEl.classList.add(cls);
+  }
+  function normalizeUrl(raw) {
+    var u = (raw || "").trim();
+    if (!u) return null;
+    if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+    try { new URL(u); return u; } catch (e) { return null; }
+  }
+  function hostOf(url) {
+    try { return new URL(url).hostname.replace(/^www\./, ""); } catch (e) { return ""; }
+  }
+  function defaultNameOf(url) {
+    var h = hostOf(url);
+    if (!h) return "未命名";
+    var parts = h.split(".");
+    var core = parts.length >= 2 ? parts[parts.length - 2] : h;
+    return core.charAt(0).toUpperCase() + core.slice(1);
+  }
+  function faviconUrls(url) {
+    var h = hostOf(url);
+    if (!h) return [];
+    return [
+      "https://api.iowen.cn/favicon/" + h + ".png",
+      "https://favicon.cccyun.cc/" + h,
+      "https://www.google.com/s2/favicons?domain=" + h + "&sz=128",
+      "https://icons.duckduckgo.com/ip3/" + h + ".ico",
+      "https://" + h + "/favicon.ico"
+    ];
+  }
+
+  // -------- clock --------
+  function tick() {
+    var d = new Date();
+    var hh = String(d.getHours()).padStart(2, "0");
+    var mm = String(d.getMinutes()).padStart(2, "0");
+    clockTime.textContent = hh + ":" + mm;
+    var weekdays = ["日", "一", "二", "三", "四", "五", "六"];
+    clockDate.textContent = (d.getMonth() + 1) + "月" + d.getDate() + "日 · 周" + weekdays[d.getDay()];
+  }
+
+  // -------- storage --------
+  function loadLocal() {
+    try {
+      var raw = localStorage.getItem(STORAGE_ITEMS);
+      if (raw) { var d = JSON.parse(raw); return Array.isArray(d) ? d : (d.items || []); }
+    } catch (e) {}
+    return [];
+  }
+  function saveLocal(list) { localStorage.setItem(STORAGE_ITEMS, JSON.stringify(list)); }
+
+  // -------- persistence wrapper --------
+  function persist() {
+    saveLocal(items);
+    setStatus(edit ? "编辑模式 · 按 Q 退出" : "本地模式", "ok");
+    return Promise.resolve();
+  }
+
+  // -------- render --------
+  function render() {
+    grid.innerHTML = "";
+    if (items.length === 0 && !edit) {
+      var empty = document.createElement("div");
+      empty.className = "empty-hint";
+      empty.innerHTML =
+        '<div class="illust">' +
+          '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+            '<path d="M12 5a7 7 0 0 0-7 7h2.2a4.8 4.8 0 0 1 9.6 0H19a7 7 0 0 0-7-7z" fill="currentColor" opacity=".9"/>' +
+            '<path d="M12 12l4.2-2.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' +
+            '<circle cx="12" cy="12" r="1.5" fill="currentColor"/>' +
+          '</svg>' +
+        '</div>' +
+        '还没有链接。<br/>按 <kbd>Q</kbd> 进入编辑模式，点 <b>+</b> 添加。';
+      grid.appendChild(empty);
+    }
+    items.forEach(function (item, idx) {
+      grid.appendChild(buildTile(item, idx));
+    });
+    // add tile
+    var addEl = document.createElement("div");
+    addEl.className = "add-tile";
+    addEl.title = "添加";
+    addEl.innerHTML = '<div class="icon">+</div><div class="name">添加</div>';
+    addEl.addEventListener("click", openAddModal);
+    grid.appendChild(addEl);
+  }
+
+  function buildTile(item, idx) {
+    var el = document.createElement("div");
+    el.className = "tile";
+    el.dataset.id = item.id;
+    el.dataset.idx = String(idx);
+
+    var icon = document.createElement("div");
+    icon.className = "icon";
+    if (item.iconSvg) {
+      icon.classList.add("custom");
+      icon.innerHTML = item.iconSvg;
+    } else {
+      var img = document.createElement("img");
+      var srcs = faviconUrls(item.url);
+      var srcIdx = 0;
+      img.src = srcs[0] || "";
+      img.onerror = function () {
+        srcIdx += 1;
+        if (srcIdx < srcs.length) { img.src = srcs[srcIdx]; }
+        else {
+          icon.innerHTML = "";
+          var letter = document.createElement("div");
+          letter.className = "letter";
+          var seed = hostOf(item.url) || item.name || "?";
+          var pal = paletteFor(seed);
+          letter.style.background = "linear-gradient(135deg, " + pal[0] + ", " + pal[1] + ")";
+          letter.textContent = (item.name || "?").charAt(0).toUpperCase();
+          icon.appendChild(letter);
+        }
+      };
+      img.alt = "";
+      icon.appendChild(img);
+    }
+
+    var del = document.createElement("div");
+    del.className = "del";
+    del.textContent = "×";
+    del.title = "删除";
+    del.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (confirm('删除 "' + item.name + '"？')) {
+        items = items.filter(function (it) { return it.id !== item.id; });
+        persist(); render();
+      }
+    });
+
+    var name = document.createElement("div");
+    name.className = "name";
+    name.textContent = item.name;
+    name.title = item.url;
+    name.addEventListener("dblclick", function (e) {
+      if (!edit) return;
+      e.stopPropagation();
+      startRename(item, name);
+    });
+
+    el.appendChild(icon);
+    el.appendChild(del);
+    el.appendChild(name);
+
+    // click to open (browse mode)
+    el.addEventListener("click", function (e) {
+      if (edit) return;
+      if (e.target === del) return;
+      window.open(item.url, "_blank", "noopener");
+    });
+
+    // HTML5 drag-and-drop reorder (edit mode)
+    el.draggable = false;
+    attachDrag(el, item);
+
+    return el;
+  }
+
+  function attachDrag(el, item) {
+    el.addEventListener("mousedown", function () {
+      if (edit) el.draggable = true;
+    });
+    el.addEventListener("dragstart", function (e) {
+      if (!edit) { e.preventDefault(); return; }
+      el.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", item.id);
+    });
+    el.addEventListener("dragend", function () {
+      el.classList.remove("dragging");
+      Array.prototype.forEach.call(grid.querySelectorAll(".tile"), function (t) { t.classList.remove("drop-target"); });
+    });
+    el.addEventListener("dragover", function (e) {
+      if (!edit) return;
+      e.preventDefault();
+      el.classList.add("drop-target");
+    });
+    el.addEventListener("dragleave", function () {
+      el.classList.remove("drop-target");
+    });
+    el.addEventListener("drop", function (e) {
+      if (!edit) return;
+      e.preventDefault();
+      var srcId = e.dataTransfer.getData("text/plain");
+      if (!srcId || srcId === item.id) return;
+      var from = items.findIndex(function (x) { return x.id === srcId; });
+      var to = items.findIndex(function (x) { return x.id === item.id; });
+      if (from === -1 || to === -1) return;
+      var moved = items.splice(from, 1)[0];
+      items.splice(to, 0, moved);
+      persist(); render();
+    });
+  }
+
+  function startRename(item, nameEl) {
+    var input = document.createElement("input");
+    input.type = "text";
+    input.className = "name-input";
+    input.value = item.name;
+    nameEl.replaceWith(input);
+    input.focus(); input.select();
+    var committed = false;
+    function finish(commit) {
+      if (committed) return; committed = true;
+      if (commit) {
+        var v = input.value.trim();
+        if (v && v !== item.name) { item.name = v; persist(); }
+      }
+      render();
+    }
+    input.addEventListener("blur", function () { finish(true); });
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); finish(true); }
+      else if (e.key === "Escape") { e.preventDefault(); finish(false); }
+    });
+  }
+
+  function setEdit(v) {
+    edit = v;
+    document.body.classList.toggle("edit", edit);
+    if (edit) setStatus("编辑模式 · 按 Q 退出", "ok");
+    else refreshIdleStatus();
+    render();
+  }
+  function refreshIdleStatus() {
+    setStatus("本地模式", "ok");
+  }
+
+  function openAddModal() {
+    modalMode = "add";
+    editingId = null;
+    mTitle.textContent = "添加链接";
+    mUrl.value = ""; mName.value = "";
+    modalAdd.classList.add("show");
+    setTimeout(function () { mUrl.focus(); }, 50);
+  }
+  function closeAddModal() { modalAdd.classList.remove("show"); }
+  function submitAdd() {
+    var url = normalizeUrl(mUrl.value);
+    if (!url) { mUrl.focus(); mUrl.style.borderColor = "var(--danger)"; return; }
+    mUrl.style.borderColor = "";
+    var name = (mName.value.trim()) || defaultNameOf(url);
+    items.push({ id: uid(), url: url, name: name });
+    persist(); render();
+    closeAddModal();
+  }
+
+  // -------- wire events --------
+  mCancel.addEventListener("click", closeAddModal);
+  mOk.addEventListener("click", submitAdd);
+  modalAdd.addEventListener("click", function (e) { if (e.target === modalAdd) closeAddModal(); });
+  [mUrl, mName].forEach(function (inp) {
+    inp.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); submitAdd(); }
+      else if (e.key === "Escape") { e.preventDefault(); closeAddModal(); }
+    });
+  });
+  window.addEventListener("keydown", function (e) {
+    var t = (e.target && e.target.tagName) || "";
+    if (t === "INPUT" || t === "TEXTAREA") return;
+    if (e.key === "q" || e.key === "Q") { e.preventDefault(); setEdit(!edit); }
+    else if ((e.ctrlKey || e.metaKey) && (e.key === "n" || e.key === "N")) {
+      e.preventDefault();
+      if (!edit) setEdit(true);
+      openAddModal();
+    } else if (e.key === "Escape") {
+      if (modalAdd.classList.contains("show")) closeAddModal();
+    }
+  });
+
+  // -------- boot --------
+  tick(); setInterval(tick, 30000);
+  items = loadLocal();
+  items = items.length ? applyDefaultIcons(items) : cloneDefaults();
+  refreshIdleStatus();
+  render();
+})();
+</script>
+</body>
+</html>
