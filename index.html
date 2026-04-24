@@ -588,9 +588,13 @@
       })
       .then(function (contents) {
         var all = [];
+        // Strip C0 control chars (\u0000-\u001F) and DEL (\u007F) + zero-width
+        // spaces. PDF.js sometimes injects \u0001 between text chunks in the
+        // same visual cell, which breaks URL parsing.
+        var CTRL = /[\u0000-\u001F\u007F\u200B-\u200F\uFEFF]/g;
         contents.forEach(function (tc) {
           tc.items.forEach(function (it) {
-            var s = (it.str || "").trim();
+            var s = (it.str || "").replace(CTRL, "").trim();
             if (!s) return;
             all.push({ x: it.transform[4], y: it.transform[5], str: s });
           });
