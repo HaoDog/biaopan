@@ -206,6 +206,59 @@
   .btn-ghost { background: transparent; color: var(--fg-dim); }
   .btn-ghost:hover { background: rgba(0,0,0,0.05); color: var(--fg); }
 
+  /* --------- right toolbar --------- */
+  body { padding-right: 56px; }
+  #right-toolbar {
+    position: fixed; right: 0; top: 0; bottom: 0; width: 56px;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 80px 0 24px; gap: 10px;
+    background: rgba(255,255,255,0.78);
+    backdrop-filter: blur(14px) saturate(180%); -webkit-backdrop-filter: blur(14px) saturate(180%);
+    border-left: 1px solid rgba(0,0,0,0.06);
+    box-shadow: -4px 0 20px rgba(0,0,0,0.04);
+    z-index: 100;
+  }
+  #screenshot-btn {
+    width: 38px; height: 38px;
+    background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 11px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.15s; color: var(--fg-dim);
+  }
+  #screenshot-btn:hover { background: rgba(0,0,0,0.10); color: var(--fg); transform: scale(1.06); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  #screenshot-btn:active { transform: scale(0.95); }
+  #screenshot-btn svg { width: 18px; height: 18px; pointer-events: none; }
+
+  /* --------- sections --------- */
+  #grid { display: block; padding: 0; }
+  .section { max-width: 1400px; margin: 0 auto; padding: 0 36px 12px; }
+  .section-header {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    letter-spacing: 2px; text-transform: uppercase;
+    padding: 28px 0 12px; margin-bottom: 18px;
+    border-bottom: 1px solid rgba(0,0,0,0.06); user-select: none;
+  }
+  .section-header::before {
+    content: ''; width: 3px; height: 13px;
+    background: linear-gradient(180deg, var(--accent), var(--accent-2));
+    border-radius: 2px; flex-shrink: 0;
+  }
+  .section-tiles {
+    display: flex; flex-wrap: wrap; gap: 26px 30px;
+    min-height: 40px; padding: 4px 2px 8px; border-radius: 12px;
+    transition: background 0.15s;
+  }
+  body.edit .section-tiles.drag-over { background: rgba(0,122,255,0.05); outline: 2px dashed rgba(0,122,255,0.25); outline-offset: 4px; }
+
+  /* --------- screenshot mode --------- */
+  body.screenshot-mode #header,
+  body.screenshot-mode #grid,
+  body.screenshot-mode #right-toolbar,
+  body.screenshot-mode #hint,
+  body.screenshot-mode #status,
+  body.screenshot-mode #footer { visibility: hidden; }
+
   /* --------- responsive --------- */
   @media (max-width: 640px) {
     #header { padding: 16px 20px 6px; }
@@ -242,6 +295,15 @@
 
   <div id="grid"></div>
 
+  <div id="right-toolbar">
+    <button id="screenshot-btn" title="截图 (Tab截图)">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h6m-6 0v0M15 3h4a2 2 0 0 1 2 2v4M3 9v6m18-6v6M3 15v4a2 2 0 0 0 2 2h4m-6-6v0M21 15v4a2 2 0 0 1-2 2h-4m6-6v0M9 21h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/>
+      </svg>
+    </button>
+  </div>
+
   <div id="hint">
     <kbd>Q</kbd> 编辑 · <kbd>Ctrl</kbd>+<kbd>N</kbd> 添加 · <kbd>F11</kbd> 全屏
   </div>
@@ -258,6 +320,16 @@
       </div>
       <div class="row">
         <input id="m-name" type="text" placeholder="名称 (留空自动从网址提取)" autocomplete="off" />
+      </div>
+      <div class="row">
+        <input id="m-desc" type="text" placeholder="描述 (可选)" autocomplete="off" />
+      </div>
+      <div class="row">
+        <select id="m-cat" style="width:100%;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.08);border-radius:10px;color:var(--fg);font-size:14px;padding:11px 14px;outline:none;font-family:inherit;cursor:pointer;">
+          <option value="ai">辅助智能体</option>
+          <option value="ref">参考资料</option>
+          <option value="web">常用网站</option>
+        </select>
       </div>
       <div class="actions">
         <button class="btn btn-ghost" id="m-cancel">取消</button>
@@ -287,7 +359,7 @@
   "use strict";
 
   // -------- 已发布的链接数据（导出时自动写入，勿手动修改此行）--------
-  var EMBEDDED_ITEMS = [{"id":"i_01x3kiu","url":"https://idea1-roan.vercel.app/","name":"脑洞发散","desc":"辅助发散脑洞","iconSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><defs><linearGradient id=\"ig1\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"#ffb199\"/><stop offset=\"1\" stop-color=\"#ff6b6b\"/></linearGradient></defs><rect width=\"64\" height=\"64\" rx=\"16\" fill=\"url(#ig1)\"/><path d=\"M32 17c-6.2 0-11.2 4.9-11.2 11 0 3.7 1.8 7 4.6 9v4.4c0 .9.7 1.6 1.6 1.6h10c.9 0 1.6-.7 1.6-1.6V37c2.8-2 4.6-5.3 4.6-9 0-6.1-5-11-11.2-11z\" fill=\"#fff\" opacity=\".97\"/><rect x=\"26.6\" y=\"43.6\" width=\"10.8\" height=\"2.3\" rx=\"1.1\" fill=\"#fff\" opacity=\".9\"/><rect x=\"28\" y=\"47\" width=\"8\" height=\"2\" rx=\"1\" fill=\"#fff\" opacity=\".75\"/></svg>"},{"id":"i_cmpw1v2","url":"https://bluepoint2-0.vercel.app/","name":"产品蓝图","desc":"产品蓝图2.0生成","iconSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><defs><linearGradient id=\"ig2\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"#6aa9ff\"/><stop offset=\"1\" stop-color=\"#5a6de5\"/></linearGradient></defs><rect width=\"64\" height=\"64\" rx=\"16\" fill=\"url(#ig2)\"/><rect x=\"14\" y=\"14\" width=\"36\" height=\"36\" rx=\"4\" fill=\"none\" stroke=\"#fff\" stroke-width=\"1.8\" opacity=\".95\"/><line x1=\"14\" y1=\"26\" x2=\"50\" y2=\"26\" stroke=\"#fff\" stroke-width=\"1.2\" opacity=\".7\"/><line x1=\"14\" y1=\"38\" x2=\"50\" y2=\"38\" stroke=\"#fff\" stroke-width=\"1.2\" opacity=\".7\"/><line x1=\"26\" y1=\"14\" x2=\"26\" y2=\"50\" stroke=\"#fff\" stroke-width=\"1.2\" opacity=\".7\"/><line x1=\"38\" y1=\"14\" x2=\"38\" y2=\"50\" stroke=\"#fff\" stroke-width=\"1.2\" opacity=\".7\"/><rect x=\"14\" y=\"14\" width=\"12\" height=\"12\" fill=\"#fff\" opacity=\".9\"/><rect x=\"26\" y=\"26\" width=\"12\" height=\"12\" fill=\"#fff\" opacity=\".55\"/><rect x=\"38\" y=\"38\" width=\"12\" height=\"12\" fill=\"#fff\" opacity=\".85\"/></svg>"},{"id":"i_f9sqa8q","url":"https://a-ipoint1.vercel.app/","name":"AI功能设计","desc":"提供如何融入AI的想法","iconSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><defs><linearGradient id=\"ig3\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"#34d39b\"/><stop offset=\"1\" stop-color=\"#2ab0c5\"/></linearGradient></defs><rect width=\"64\" height=\"64\" rx=\"16\" fill=\"url(#ig3)\"/><rect x=\"20\" y=\"20\" width=\"24\" height=\"24\" rx=\"4\" fill=\"#fff\" opacity=\".96\"/><g fill=\"#fff\" opacity=\".88\"><rect x=\"15\" y=\"24\" width=\"5\" height=\"2\" rx=\"1\"/><rect x=\"15\" y=\"31\" width=\"5\" height=\"2\" rx=\"1\"/><rect x=\"15\" y=\"38\" width=\"5\" height=\"2\" rx=\"1\"/><rect x=\"44\" y=\"24\" width=\"5\" height=\"2\" rx=\"1\"/><rect x=\"44\" y=\"31\" width=\"5\" height=\"2\" rx=\"1\"/><rect x=\"44\" y=\"38\" width=\"5\" height=\"2\" rx=\"1\"/><rect x=\"24\" y=\"15\" width=\"2\" height=\"5\" rx=\"1\"/><rect x=\"31\" y=\"15\" width=\"2\" height=\"5\" rx=\"1\"/><rect x=\"38\" y=\"15\" width=\"2\" height=\"5\" rx=\"1\"/><rect x=\"24\" y=\"44\" width=\"2\" height=\"5\" rx=\"1\"/><rect x=\"31\" y=\"44\" width=\"2\" height=\"5\" rx=\"1\"/><rect x=\"38\" y=\"44\" width=\"2\" height=\"5\" rx=\"1\"/></g><path d=\"M32 24.5l1.8 4.7 4.7 1.8-4.7 1.8-1.8 4.7-1.8-4.7-4.7-1.8 4.7-1.8z\" fill=\"url(#ig3)\"/></svg>"},{"id":"i_j28dmb2","url":"https://www.baidu.com","name":"百度的","desc":"","iconSvg":null}]; // __BIAOPAN_DATA__
+  var EMBEDDED_ITEMS = [{"id":"i_01x3kiu","url":"https://idea1-roan.vercel.app/","name":"脑洞发散","desc":"辅助发散脑洞","iconSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><defs><linearGradient id=\"ig1\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"#ff9a56\"/><stop offset=\"1\" stop-color=\"#f43f5e\"/></linearGradient></defs><rect width=\"64\" height=\"64\" rx=\"16\" fill=\"url(#ig1)\"/><path d=\"M32 15a10 10 0 0 0-6.2 17.8V37a2 2 0 0 0 2 2h8.4a2 2 0 0 0 2-2v-4.2A10 10 0 0 0 32 15z\" fill=\"#fff\" opacity=\".95\"/><rect x=\"27\" y=\"40.5\" width=\"10\" height=\"2.5\" rx=\"1.25\" fill=\"#fff\" opacity=\".82\"/><rect x=\"28.5\" y=\"44.5\" width=\"7\" height=\"2\" rx=\"1\" fill=\"#fff\" opacity=\".65\"/><path d=\"M19 21l1.2 3 3 1.2-3 1.2-1.2 3-1.2-3-3-1.2 3-1.2z\" fill=\"#fff\" opacity=\".65\"/><path d=\"M47 14l.9 2.2 2.2.9-2.2.9-.9 2.2-.9-2.2-2.2-.9 2.2-.9z\" fill=\"#fff\" opacity=\".5\"/></svg>"},{"id":"i_cmpw1v2","url":"https://bluepoint2-0.vercel.app/","name":"产品蓝图","desc":"产品蓝图2.0生成","iconSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><defs><linearGradient id=\"ig2\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"#60a5fa\"/><stop offset=\"1\" stop-color=\"#2563eb\"/></linearGradient></defs><rect width=\"64\" height=\"64\" rx=\"16\" fill=\"url(#ig2)\"/><rect x=\"14\" y=\"11\" width=\"28\" height=\"36\" rx=\"4\" fill=\"#fff\" opacity=\".14\"/><rect x=\"14\" y=\"11\" width=\"28\" height=\"36\" rx=\"4\" fill=\"none\" stroke=\"#fff\" stroke-width=\"1.8\" opacity=\".9\"/><path d=\"M33 11v9h9\" fill=\"none\" stroke=\"#fff\" stroke-width=\"1.8\" stroke-linejoin=\"round\" opacity=\".85\"/><path d=\"M33 11l9 9h-9z\" fill=\"#fff\" opacity=\".28\"/><line x1=\"20\" y1=\"27\" x2=\"35\" y2=\"27\" stroke=\"#fff\" stroke-width=\"1.6\" stroke-linecap=\"round\" opacity=\".85\"/><line x1=\"20\" y1=\"32\" x2=\"37\" y2=\"32\" stroke=\"#fff\" stroke-width=\"1.6\" stroke-linecap=\"round\" opacity=\".85\"/><line x1=\"20\" y1=\"37\" x2=\"29\" y2=\"37\" stroke=\"#fff\" stroke-width=\"1.6\" stroke-linecap=\"round\" opacity=\".85\"/><circle cx=\"46\" cy=\"43\" r=\"7.5\" fill=\"#fff\" opacity=\".2\"/><path d=\"M43 43l2 2 4-4\" stroke=\"#fff\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" opacity=\".92\"/></svg>"},{"id":"i_f9sqa8q","url":"https://a-ipoint1.vercel.app/","name":"AI功能设计","desc":"提供如何融入AI的想法","iconSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><defs><linearGradient id=\"ig3\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"#10d9a4\"/><stop offset=\"1\" stop-color=\"#0891b2\"/></linearGradient></defs><rect width=\"64\" height=\"64\" rx=\"16\" fill=\"url(#ig3)\"/><rect x=\"21\" y=\"21\" width=\"22\" height=\"22\" rx=\"5\" fill=\"#fff\" opacity=\".18\"/><rect x=\"21\" y=\"21\" width=\"22\" height=\"22\" rx=\"5\" fill=\"none\" stroke=\"#fff\" stroke-width=\"1.8\" opacity=\".9\"/><line x1=\"21\" y1=\"28\" x2=\"15\" y2=\"28\" stroke=\"#fff\" stroke-width=\"1.8\" stroke-linecap=\"round\" opacity=\".8\"/><line x1=\"21\" y1=\"32\" x2=\"15\" y2=\"32\" stroke=\"#fff\" stroke-width=\"1.8\" stroke-linecap=\"round\" opacity=\".8\"/><line x1=\"21\" y1=\"36\" x2=\"15\" y2=\"36\" stroke=\"#fff\" stroke-width=\"1.8\" stroke-linecap=\"round\" opacity=\".8\"/><line x1=\"43\" y1=\"28\" x2=\"49\" y2=\"28\" stroke=\"#fff\" stroke-width=\"1.8\" stroke-linecap=\"round\" opacity=\".8\"/><line x1=\"43\" y1=\"32\" x2=\"49\" y2=\"32\" stroke=\"#fff\" stroke-width=\"1.8\" stroke-linecap=\"round\" opacity=\".8\"/><line x1=\"43\" y1=\"36\" x2=\"49\" y2=\"36\" stroke=\"#fff\" stroke-width=\"1.8\" stroke-linecap=\"round\" opacity=\".8\"/><line x1=\"28\" y1=\"21\" x2=\"28\" y2=\"15\" stroke=\"#fff\" stroke-width=\"1.8\" stroke-linecap=\"round\" opacity=\".8\"/><line x1=\"32\" y1=\"21\" x2=\"32\" y2=\"15\" stroke=\"#fff\" stroke-width=\"1.8\" stroke-linecap=\"round\" opacity=\".8\"/><line x1=\"36\" y1=\"21\" x2=\"36\" y2=\"15\" stroke=\"#fff\" stroke-width=\"1.8\" stroke-linecap=\"round\" opacity=\".8\"/><line x1=\"28\" y1=\"43\" x2=\"28\" y2=\"49\" stroke=\"#fff\" stroke-width=\"1.8\" stroke-linecap=\"round\" opacity=\".8\"/><line x1=\"32\" y1=\"43\" x2=\"32\" y2=\"49\" stroke=\"#fff\" stroke-width=\"1.8\" stroke-linecap=\"round\" opacity=\".8\"/><line x1=\"36\" y1=\"43\" x2=\"36\" y2=\"49\" stroke=\"#fff\" stroke-width=\"1.8\" stroke-linecap=\"round\" opacity=\".8\"/><path d=\"M32 27l1.4 3.6 3.6 1.4-3.6 1.4-1.4 3.6-1.4-3.6-3.6-1.4 3.6-1.4z\" fill=\"#fff\" opacity=\".95\"/></svg>"},{"id":"i_tkm8m8c","url":"https://gemini.google.com/app","name":"Gemini","desc":"全球顶级AI，任何问题都可以问","iconSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><defs><linearGradient id=\"igem\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"#a78bfa\"/><stop offset=\"1\" stop-color=\"#4f46e5\"/></linearGradient></defs><rect width=\"64\" height=\"64\" rx=\"16\" fill=\"url(#igem)\"/><path d=\"M32 13c0 10.5-8.5 19-19 19 10.5 0 19 8.5 19 19 0-10.5 8.5-19 19-19-10.5 0-19-8.5-19-19z\" fill=\"#fff\" opacity=\".95\"/><path d=\"M18 19c0 4.4-3.6 8-8 8 4.4 0 8 3.6 8 8 0-4.4 3.6-8 8-8-4.4 0-8-3.6-8-8z\" fill=\"#fff\" opacity=\".5\"/><path d=\"M47 38c0 3.3-2.7 6-6 6 3.3 0 6 2.7 6 6 0-3.3 2.7-6 6-6-3.3 0-6-2.7-6-6z\" fill=\"#fff\" opacity=\".5\"/></svg>"},{"id":"i_muezk62","url":"https://github.com/","name":"Github","desc":"代码托管平台","iconSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><defs><linearGradient id=\"igh\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"#475569\"/><stop offset=\"1\" stop-color=\"#1e293b\"/></linearGradient></defs><rect width=\"64\" height=\"64\" rx=\"16\" fill=\"url(#igh)\"/><path d=\"M32 14a18 18 0 0 0-5.7 35.1c.9.2 1.2-.4 1.2-.9v-3c-5 1.1-6-2.4-6-2.4-.8-2-2-2.6-2-2.6-1.6-1.1.1-1.1.1-1.1 1.8.1 2.7 1.8 2.7 1.8 1.6 2.7 4.2 1.9 5.2 1.5.1-1.2.6-1.9 1.1-2.4-4-.4-8.2-2-8.2-8.8 0-2 .7-3.6 1.8-4.9-.2-.5-.8-2.3.2-4.7 0 0 1.5-.5 4.8 1.8a16.7 16.7 0 0 1 8.8 0c3.3-2.3 4.8-1.8 4.8-1.8 1 2.4.4 4.2.2 4.7 1.1 1.3 1.8 2.9 1.8 4.9 0 6.9-4.2 8.4-8.2 8.8.6.6 1.2 1.8 1.2 3.5v5.1c0 .5.3 1 1.2.9A18 18 0 0 0 32 14z\" fill=\"#fff\" opacity=\".92\"/></svg>"},{"id":"i_5bkr1rk","url":"https://vercel.com/","name":"Vecrel","desc":"部署工具，生成全球可以访问的链接","iconSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><defs><linearGradient id=\"igv\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"#334155\"/><stop offset=\"1\" stop-color=\"#0f172a\"/></linearGradient></defs><rect width=\"64\" height=\"64\" rx=\"16\" fill=\"url(#igv)\"/><path d=\"M32 15L55 51H9z\" fill=\"#fff\" opacity=\".95\"/></svg>"},{"id":"i_8sevjvk","url":"https://api-14o5.vercel.app/","name":"API获取","desc":"获得在编程加入AI功能所需要的模型名称和API-key，目前支持千问模型","iconSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><defs><linearGradient id=\"igapi\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"#a855f7\"/><stop offset=\"1\" stop-color=\"#6d28d9\"/></linearGradient></defs><rect width=\"64\" height=\"64\" rx=\"16\" fill=\"url(#igapi)\"/><rect x=\"11\" y=\"16\" width=\"42\" height=\"32\" rx=\"8\" fill=\"#fff\" opacity=\".12\"/><rect x=\"11\" y=\"16\" width=\"42\" height=\"32\" rx=\"8\" fill=\"none\" stroke=\"#fff\" stroke-width=\"1.6\" opacity=\".8\"/><circle cx=\"20\" cy=\"24\" r=\"2.5\" fill=\"#ff5f57\" opacity=\".9\"/><circle cx=\"27\" cy=\"24\" r=\"2.5\" fill=\"#febc2e\" opacity=\".9\"/><circle cx=\"34\" cy=\"24\" r=\"2.5\" fill=\"#28c840\" opacity=\".9\"/><path d=\"M17 34l6-3-6-3\" stroke=\"#fff\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" fill=\"none\" opacity=\".9\"/><line x1=\"26\" y1=\"37\" x2=\"38\" y2=\"37\" stroke=\"#fff\" stroke-width=\"2\" stroke-linecap=\"round\" opacity=\".7\"/></svg>"},{"id":"i_wmmdepx","url":"https://tishici-pi.vercel.app/","name":"一键提示词","desc":"获取课程需要提示词，可以进行一键复制粘贴","iconSvg":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><defs><linearGradient id=\"igpr\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"#fbbf24\"/><stop offset=\"1\" stop-color=\"#d97706\"/></linearGradient></defs><rect width=\"64\" height=\"64\" rx=\"16\" fill=\"url(#igpr)\"/><path d=\"M37 12L21 34h13l-5 18 20-26H37z\" fill=\"#fff\" opacity=\".95\"/></svg>"},{"id":"i_kf0q4vj","url":"https://jiaocheng-pied.vercel.app/","name":"五一营教程","desc":"初级开发指导，实操参考","iconSvg":null},{"id":"i_r46kdfn","url":"https://local-ai-lab.vercel.app","name":"测试模型","desc":"针对五一营提供的模型进行测试","iconSvg":null}]; // __BIAOPAN_DATA__
 
   var STORAGE_ITEMS   = "biaopan_items_v2";
   var STORAGE_EDIT_PWD = "biaopan_edit_pwd";
@@ -296,47 +368,159 @@
   var ICON_IDEA =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
       '<defs><linearGradient id="ig1" x1="0" y1="0" x2="1" y2="1">' +
-        '<stop offset="0" stop-color="#ffb199"/><stop offset="1" stop-color="#ff6b6b"/>' +
+        '<stop offset="0" stop-color="#ff9a56"/><stop offset="1" stop-color="#f43f5e"/>' +
       '</linearGradient></defs>' +
       '<rect width="64" height="64" rx="16" fill="url(#ig1)"/>' +
-      '<path d="M32 17c-6.2 0-11.2 4.9-11.2 11 0 3.7 1.8 7 4.6 9v4.4c0 .9.7 1.6 1.6 1.6h10c.9 0 1.6-.7 1.6-1.6V37c2.8-2 4.6-5.3 4.6-9 0-6.1-5-11-11.2-11z" fill="#fff" opacity=".97"/>' +
-      '<rect x="26.6" y="43.6" width="10.8" height="2.3" rx="1.1" fill="#fff" opacity=".9"/>' +
-      '<rect x="28" y="47" width="8" height="2" rx="1" fill="#fff" opacity=".75"/>' +
+      '<path d="M32 15a10 10 0 0 0-6.2 17.8V37a2 2 0 0 0 2 2h8.4a2 2 0 0 0 2-2v-4.2A10 10 0 0 0 32 15z" fill="#fff" opacity=".95"/>' +
+      '<rect x="27" y="40.5" width="10" height="2.5" rx="1.25" fill="#fff" opacity=".82"/>' +
+      '<rect x="28.5" y="44.5" width="7" height="2" rx="1" fill="#fff" opacity=".65"/>' +
+      '<path d="M19 21l1.2 3 3 1.2-3 1.2-1.2 3-1.2-3-3-1.2 3-1.2z" fill="#fff" opacity=".65"/>' +
+      '<path d="M47 14l.9 2.2 2.2.9-2.2.9-.9 2.2-.9-2.2-2.2-.9 2.2-.9z" fill="#fff" opacity=".5"/>' +
     '</svg>';
 
   var ICON_BLUEPRINT =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
       '<defs><linearGradient id="ig2" x1="0" y1="0" x2="1" y2="1">' +
-        '<stop offset="0" stop-color="#6aa9ff"/><stop offset="1" stop-color="#5a6de5"/>' +
+        '<stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#2563eb"/>' +
       '</linearGradient></defs>' +
       '<rect width="64" height="64" rx="16" fill="url(#ig2)"/>' +
-      '<rect x="14" y="14" width="36" height="36" rx="4" fill="none" stroke="#fff" stroke-width="1.8" opacity=".95"/>' +
-      '<line x1="14" y1="26" x2="50" y2="26" stroke="#fff" stroke-width="1.2" opacity=".7"/>' +
-      '<line x1="14" y1="38" x2="50" y2="38" stroke="#fff" stroke-width="1.2" opacity=".7"/>' +
-      '<line x1="26" y1="14" x2="26" y2="50" stroke="#fff" stroke-width="1.2" opacity=".7"/>' +
-      '<line x1="38" y1="14" x2="38" y2="50" stroke="#fff" stroke-width="1.2" opacity=".7"/>' +
-      '<rect x="14" y="14" width="12" height="12" fill="#fff" opacity=".9"/>' +
-      '<rect x="26" y="26" width="12" height="12" fill="#fff" opacity=".55"/>' +
-      '<rect x="38" y="38" width="12" height="12" fill="#fff" opacity=".85"/>' +
+      '<rect x="14" y="11" width="28" height="36" rx="4" fill="#fff" opacity=".14"/>' +
+      '<rect x="14" y="11" width="28" height="36" rx="4" fill="none" stroke="#fff" stroke-width="1.8" opacity=".9"/>' +
+      '<path d="M33 11v9h9" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round" opacity=".85"/>' +
+      '<path d="M33 11l9 9h-9z" fill="#fff" opacity=".28"/>' +
+      '<line x1="20" y1="27" x2="35" y2="27" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".85"/>' +
+      '<line x1="20" y1="32" x2="37" y2="32" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".85"/>' +
+      '<line x1="20" y1="37" x2="29" y2="37" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".85"/>' +
+      '<circle cx="46" cy="43" r="7.5" fill="#fff" opacity=".2"/>' +
+      '<path d="M43 43l2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".92"/>' +
     '</svg>';
 
   var ICON_AI =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
       '<defs><linearGradient id="ig3" x1="0" y1="0" x2="1" y2="1">' +
-        '<stop offset="0" stop-color="#34d39b"/><stop offset="1" stop-color="#2ab0c5"/>' +
+        '<stop offset="0" stop-color="#10d9a4"/><stop offset="1" stop-color="#0891b2"/>' +
       '</linearGradient></defs>' +
       '<rect width="64" height="64" rx="16" fill="url(#ig3)"/>' +
-      '<rect x="20" y="20" width="24" height="24" rx="4" fill="#fff" opacity=".96"/>' +
-      '<g fill="#fff" opacity=".88">' +
-        '<rect x="15" y="24" width="5" height="2" rx="1"/><rect x="15" y="31" width="5" height="2" rx="1"/>' +
-        '<rect x="15" y="38" width="5" height="2" rx="1"/><rect x="44" y="24" width="5" height="2" rx="1"/>' +
-        '<rect x="44" y="31" width="5" height="2" rx="1"/><rect x="44" y="38" width="5" height="2" rx="1"/>' +
-        '<rect x="24" y="15" width="2" height="5" rx="1"/><rect x="31" y="15" width="2" height="5" rx="1"/>' +
-        '<rect x="38" y="15" width="2" height="5" rx="1"/><rect x="24" y="44" width="2" height="5" rx="1"/>' +
-        '<rect x="31" y="44" width="2" height="5" rx="1"/><rect x="38" y="44" width="2" height="5" rx="1"/>' +
-      '</g>' +
-      '<path d="M32 24.5l1.8 4.7 4.7 1.8-4.7 1.8-1.8 4.7-1.8-4.7-4.7-1.8 4.7-1.8z" fill="url(#ig3)"/>' +
+      '<rect x="21" y="21" width="22" height="22" rx="5" fill="#fff" opacity=".18"/>' +
+      '<rect x="21" y="21" width="22" height="22" rx="5" fill="none" stroke="#fff" stroke-width="1.8" opacity=".9"/>' +
+      '<line x1="21" y1="28" x2="15" y2="28" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".8"/>' +
+      '<line x1="21" y1="32" x2="15" y2="32" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".8"/>' +
+      '<line x1="21" y1="36" x2="15" y2="36" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".8"/>' +
+      '<line x1="43" y1="28" x2="49" y2="28" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".8"/>' +
+      '<line x1="43" y1="32" x2="49" y2="32" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".8"/>' +
+      '<line x1="43" y1="36" x2="49" y2="36" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".8"/>' +
+      '<line x1="28" y1="21" x2="28" y2="15" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".8"/>' +
+      '<line x1="32" y1="21" x2="32" y2="15" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".8"/>' +
+      '<line x1="36" y1="21" x2="36" y2="15" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".8"/>' +
+      '<line x1="28" y1="43" x2="28" y2="49" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".8"/>' +
+      '<line x1="32" y1="43" x2="32" y2="49" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".8"/>' +
+      '<line x1="36" y1="43" x2="36" y2="49" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".8"/>' +
+      '<path d="M32 27l1.4 3.6 3.6 1.4-3.6 1.4-1.4 3.6-1.4-3.6-3.6-1.4 3.6-1.4z" fill="#fff" opacity=".95"/>' +
     '</svg>';
+
+  var ICON_QQ =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+      '<defs><linearGradient id="igqq" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0" stop-color="#38bdf8"/><stop offset="1" stop-color="#0284c7"/>' +
+      '</linearGradient></defs>' +
+      '<rect width="64" height="64" rx="16" fill="url(#igqq)"/>' +
+      '<rect x="10" y="13" width="34" height="24" rx="8" fill="#fff" opacity=".9"/>' +
+      '<path d="M18 37l-4 8 10-8" fill="#fff" opacity=".9"/>' +
+      '<rect x="22" y="29" width="30" height="20" rx="7" fill="#fff" opacity=".5"/>' +
+      '<path d="M47 49l3 6-8-6" fill="#fff" opacity=".5"/>' +
+      '<circle cx="20" cy="25" r="2.5" fill="url(#igqq)" opacity=".7"/>' +
+      '<circle cx="28" cy="25" r="2.5" fill="url(#igqq)" opacity=".7"/>' +
+      '<circle cx="36" cy="25" r="2.5" fill="url(#igqq)" opacity=".7"/>' +
+    '</svg>';
+
+  var ICON_GEMINI =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+      '<defs><linearGradient id="igem" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0" stop-color="#a78bfa"/><stop offset="1" stop-color="#4f46e5"/>' +
+      '</linearGradient></defs>' +
+      '<rect width="64" height="64" rx="16" fill="url(#igem)"/>' +
+      '<path d="M32 13c0 10.5-8.5 19-19 19 10.5 0 19 8.5 19 19 0-10.5 8.5-19 19-19-10.5 0-19-8.5-19-19z" fill="#fff" opacity=".95"/>' +
+      '<path d="M18 19c0 4.4-3.6 8-8 8 4.4 0 8 3.6 8 8 0-4.4 3.6-8 8-8-4.4 0-8-3.6-8-8z" fill="#fff" opacity=".5"/>' +
+      '<path d="M47 38c0 3.3-2.7 6-6 6 3.3 0 6 2.7 6 6 0-3.3 2.7-6 6-6-3.3 0-6-2.7-6-6z" fill="#fff" opacity=".5"/>' +
+    '</svg>';
+
+  var ICON_GITHUB =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+      '<defs><linearGradient id="igh" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0" stop-color="#475569"/><stop offset="1" stop-color="#1e293b"/>' +
+      '</linearGradient></defs>' +
+      '<rect width="64" height="64" rx="16" fill="url(#igh)"/>' +
+      '<path d="M32 14a18 18 0 0 0-5.7 35.1c.9.2 1.2-.4 1.2-.9v-3c-5 1.1-6-2.4-6-2.4-.8-2-2-2.6-2-2.6-1.6-1.1.1-1.1.1-1.1 1.8.1 2.7 1.8 2.7 1.8 1.6 2.7 4.2 1.9 5.2 1.5.1-1.2.6-1.9 1.1-2.4-4-.4-8.2-2-8.2-8.8 0-2 .7-3.6 1.8-4.9-.2-.5-.8-2.3.2-4.7 0 0 1.5-.5 4.8 1.8a16.7 16.7 0 0 1 8.8 0c3.3-2.3 4.8-1.8 4.8-1.8 1 2.4.4 4.2.2 4.7 1.1 1.3 1.8 2.9 1.8 4.9 0 6.9-4.2 8.4-8.2 8.8.6.6 1.2 1.8 1.2 3.5v5.1c0 .5.3 1 1.2.9A18 18 0 0 0 32 14z" fill="#fff" opacity=".92"/>' +
+    '</svg>';
+
+  var ICON_VERCEL =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+      '<defs><linearGradient id="igv" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0" stop-color="#334155"/><stop offset="1" stop-color="#0f172a"/>' +
+      '</linearGradient></defs>' +
+      '<rect width="64" height="64" rx="16" fill="url(#igv)"/>' +
+      '<path d="M32 15L55 51H9z" fill="#fff" opacity=".95"/>' +
+    '</svg>';
+
+  var ICON_API =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+      '<defs><linearGradient id="igapi" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0" stop-color="#a855f7"/><stop offset="1" stop-color="#6d28d9"/>' +
+      '</linearGradient></defs>' +
+      '<rect width="64" height="64" rx="16" fill="url(#igapi)"/>' +
+      '<rect x="11" y="16" width="42" height="32" rx="8" fill="#fff" opacity=".12"/>' +
+      '<rect x="11" y="16" width="42" height="32" rx="8" fill="none" stroke="#fff" stroke-width="1.6" opacity=".8"/>' +
+      '<circle cx="20" cy="24" r="2.5" fill="#ff5f57" opacity=".9"/>' +
+      '<circle cx="27" cy="24" r="2.5" fill="#febc2e" opacity=".9"/>' +
+      '<circle cx="34" cy="24" r="2.5" fill="#28c840" opacity=".9"/>' +
+      '<path d="M17 34l6-3-6-3" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".9"/>' +
+      '<line x1="26" y1="37" x2="38" y2="37" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/>' +
+    '</svg>';
+
+  var ICON_PROMPT =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+      '<defs><linearGradient id="igpr" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0" stop-color="#fbbf24"/><stop offset="1" stop-color="#d97706"/>' +
+      '</linearGradient></defs>' +
+      '<rect width="64" height="64" rx="16" fill="url(#igpr)"/>' +
+      '<path d="M37 12L21 34h13l-5 18 20-26H37z" fill="#fff" opacity=".95"/>' +
+    '</svg>';
+
+  var ICON_TUTORIAL =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+      '<defs><linearGradient id="igtut" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#0891b2"/>' +
+      '</linearGradient></defs>' +
+      '<rect width="64" height="64" rx="16" fill="url(#igtut)"/>' +
+      '<path d="M32 20v26M32 20c-2-1-9-4-17-3v26c8-1 15 2 17 3M32 20c2-1 9-4 17-3v26c-8-1-15 2-17 3" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/>' +
+      '<path d="M20 18l1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1z" fill="#fff" opacity=".65"/>' +
+    '</svg>';
+
+  var ICON_TESTMODEL =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+      '<defs><linearGradient id="igtm" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0" stop-color="#e879f9"/><stop offset="1" stop-color="#9333ea"/>' +
+      '</linearGradient></defs>' +
+      '<rect width="64" height="64" rx="16" fill="url(#igtm)"/>' +
+      '<line x1="24" y1="13" x2="40" y2="13" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".9"/>' +
+      '<path d="M27 13v16L17 43a4 4 0 0 0 3.5 6h23a4 4 0 0 0 3.5-6L37 29V13" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".9"/>' +
+      '<circle cx="27" cy="43" r="2.5" fill="#fff" opacity=".8"/>' +
+      '<circle cx="36" cy="47" r="1.8" fill="#fff" opacity=".65"/>' +
+      '<circle cx="32" cy="40" r="1.5" fill="#fff" opacity=".7"/>' +
+    '</svg>';
+
+  // ID → 图标映射，applyIcons 优先按 ID 匹配，确保 localStorage 中的旧数据也能更新
+  var ICON_BY_ID = {
+    "i_01x3kiu": ICON_IDEA,
+    "i_cmpw1v2": ICON_BLUEPRINT,
+    "i_f9sqa8q": ICON_AI,
+    "i_r1gmgfb": ICON_QQ,
+    "i_tkm8m8c": ICON_GEMINI,
+    "i_muezk62": ICON_GITHUB,
+    "i_5bkr1rk": ICON_VERCEL,
+    "i_8sevjvk": ICON_API,
+    "i_wmmdepx": ICON_PROMPT
+  };
 
   // 初始默认链接（首次打开、从未导出过时显示）
   var DEFAULT_ITEMS = [
@@ -352,17 +536,26 @@
 
   function matchIconByName(name) {
     if (!name) return null;
-    if (/脑洞|idea/i.test(name))      return ICON_IDEA;
-    if (/蓝图|blueprint/i.test(name)) return ICON_BLUEPRINT;
-    if (/AI|智能/i.test(name))        return ICON_AI;
+    if (/脑洞|idea/i.test(name))        return ICON_IDEA;
+    if (/蓝图|blueprint/i.test(name))   return ICON_BLUEPRINT;
+    if (/AI|智能/i.test(name))           return ICON_AI;
+    if (/qq|企鹅/i.test(name))           return ICON_QQ;
+    if (/gemini/i.test(name))            return ICON_GEMINI;
+    if (/github/i.test(name))            return ICON_GITHUB;
+    if (/vercel|vecrel/i.test(name))     return ICON_VERCEL;
+    if (/api/i.test(name))               return ICON_API;
+    if (/提示词|prompt/i.test(name))     return ICON_PROMPT;
+    if (/教程|tutorial|五一应/i.test(name)) return ICON_TUTORIAL;
+    if (/测试模型|test.*model|model.*test/i.test(name)) return ICON_TESTMODEL;
     return null;
   }
   function applyIcons(list) {
     return (list || []).map(function (it) {
-      if (it && !it.iconSvg) {
-        var svg = matchIconByName(it.name);
-        if (svg) return Object.assign({}, it, { iconSvg: svg });
-      }
+      if (!it) return it;
+      var byId = it.id && ICON_BY_ID[it.id];
+      if (byId) return Object.assign({}, it, { iconSvg: byId });
+      var byName = matchIconByName(it.name);
+      if (byName) return Object.assign({}, it, { iconSvg: byName });
       return it;
     });
   }
@@ -389,9 +582,12 @@
   var modalAdd   = document.getElementById("modal-add");
   var mUrl       = document.getElementById("m-url");
   var mName      = document.getElementById("m-name");
+  var mDesc      = document.getElementById("m-desc");
+  var mCat       = document.getElementById("m-cat");
   var mOk        = document.getElementById("m-ok");
   var mCancel    = document.getElementById("m-cancel");
   var mTitle     = document.getElementById("modal-title");
+  var screenshotBtn = document.getElementById("screenshot-btn");
   var clockTime  = document.getElementById("clock-time");
   var clockDate  = document.getElementById("clock-date");
   var modalEditPwd = document.getElementById("modal-editpwd");
@@ -402,9 +598,27 @@
   var epHint       = document.getElementById("ep-hint");
   var epErr        = document.getElementById("ep-err");
 
+  // -------- categories --------
+  var CATEGORIES      = ["ai", "ref", "web"];
+  var CATEGORY_LABELS = { ai: "辅助智能体", ref: "参考资料", web: "常用网站" };
+  var CATEGORY_BY_ID  = {
+    "i_01x3kiu": "ai", "i_cmpw1v2": "ai", "i_f9sqa8q": "ai",
+    "i_tkm8m8c": "ai", "i_wmmdepx": "ai",
+    "i_muezk62": "ref","i_5bkr1rk": "ref","i_8sevjvk": "ref",
+    "i_r1gmgfb": "web"
+  };
+  function applyCategory(list) {
+    return (list || []).map(function(it) {
+      if (!it || it.category) return it;
+      return Object.assign({}, it, { category: CATEGORY_BY_ID[it.id] || "web" });
+    });
+  }
+
   // -------- state --------
-  var items = [];
-  var edit  = false;
+  var items       = [];
+  var edit        = false;
+  var editingItem = null;
+  var addCategory = "ai";
 
   // -------- utils --------
   function uid() { return "i_" + Math.random().toString(36).slice(2, 9); }
@@ -438,6 +652,70 @@
       "https://" + h + "/favicon.ico"
     ];
   }
+
+  // -------- screenshot --------
+  function takeScreenshot() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+      setStatus("当前浏览器不支持截图功能", "err"); return;
+    }
+    screenshotBtn.disabled = true;
+    setStatus("请选择要截图的内容…", "");
+
+    navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "browser" }, audio: false })
+      .then(function (stream) {
+        setStatus("正在捕获画面…", "");
+        var video = document.createElement("video");
+        video.muted = true;
+        video.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;";
+        document.body.appendChild(video);
+        video.srcObject = stream;
+
+        video.oncanplay = function () {
+          video.play().then(function () {
+            setTimeout(function () {
+              var canvas = document.createElement("canvas");
+              canvas.width  = video.videoWidth  || 1920;
+              canvas.height = video.videoHeight || 1080;
+              canvas.getContext("2d").drawImage(video, 0, 0);
+              stream.getTracks().forEach(function (t) { t.stop(); });
+              document.body.removeChild(video);
+              screenshotBtn.disabled = false;
+              setStatus("正在写入剪贴板…", "");
+
+              canvas.toBlob(function (blob) {
+                if (!blob) { setStatus("截图生成失败", "err"); return; }
+                window.focus();
+                setTimeout(function () {
+                  navigator.clipboard.write([
+                    new ClipboardItem({ "image/png": Promise.resolve(blob) })
+                  ])
+                  .then(function () {
+                    setStatus("截图已复制 · Ctrl+V 直接粘贴 ✓", "ok");
+                    setTimeout(function () { setStatus("本地模式", "ok"); }, 3000);
+                  })
+                  .catch(function () {
+                    var a = document.createElement("a");
+                    a.href = URL.createObjectURL(blob);
+                    a.download = "screenshot.png";
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+                    setStatus("截图已下载（剪贴板权限不足）", "ok");
+                    setTimeout(function () { setStatus("本地模式", "ok"); }, 4000);
+                  });
+                }, 200);
+              }, "image/png");
+            }, 300);
+          });
+        };
+      })
+      .catch(function () {
+        screenshotBtn.disabled = false;
+        setStatus("截图已取消", "");
+        setTimeout(function () { setStatus("本地模式", "ok"); }, 2000);
+      });
+  }
+
+  screenshotBtn.addEventListener("click", takeScreenshot);
 
   // -------- clock --------
   function tick() {
@@ -577,23 +855,46 @@
   // -------- render --------
   function render() {
     grid.innerHTML = "";
-    if (items.length === 0 && !edit) {
-      var empty = document.createElement("div");
-      empty.className = "empty-hint";
-      empty.innerHTML =
-        '<div class="illust"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-          '<path d="M12 5a7 7 0 0 0-7 7h2.2a4.8 4.8 0 0 1 9.6 0H19a7 7 0 0 0-7-7z" fill="currentColor" opacity=".9"/>' +
-          '<path d="M12 12l4.2-2.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' +
-          '<circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg></div>' +
-        '还没有链接。<br/>按 <kbd>Q</kbd> 进入编辑模式，点 <b>+</b> 添加。';
-      grid.appendChild(empty);
-    }
-    items.forEach(function (item, idx) { grid.appendChild(buildTile(item, idx)); });
-    var addEl = document.createElement("div");
-    addEl.className = "add-tile"; addEl.title = "添加";
-    addEl.innerHTML = '<div class="icon">+</div><div class="name">添加</div>';
-    addEl.addEventListener("click", openAddModal);
-    grid.appendChild(addEl);
+    CATEGORIES.forEach(function(cat) {
+      var section = document.createElement("div");
+      section.className = "section"; section.dataset.cat = cat;
+
+      var hdr = document.createElement("div");
+      hdr.className = "section-header";
+      hdr.textContent = CATEGORY_LABELS[cat];
+      section.appendChild(hdr);
+
+      var row = document.createElement("div");
+      row.className = "section-tiles";
+
+      var catItems = items.filter(function(it) { return it.category === cat; });
+      catItems.forEach(function(item) {
+        row.appendChild(buildTile(item, items.indexOf(item)));
+      });
+
+      if (edit) {
+        var addEl = document.createElement("div");
+        addEl.className = "add-tile"; addEl.title = "添加到" + CATEGORY_LABELS[cat];
+        addEl.innerHTML = '<div class="icon">+</div><div class="name">添加</div>';
+        addEl.addEventListener("click", function() { openAddModal(cat); });
+        row.appendChild(addEl);
+
+        row.addEventListener("dragover", function(e) { e.preventDefault(); row.classList.add("drag-over"); });
+        row.addEventListener("dragleave", function() { row.classList.remove("drag-over"); });
+        row.addEventListener("drop", function(e) {
+          e.preventDefault(); row.classList.remove("drag-over");
+          var srcId = e.dataTransfer.getData("text/plain");
+          if (!srcId) return;
+          var idx = items.findIndex(function(x) { return x.id === srcId; });
+          if (idx === -1 || items[idx].category === cat) return;
+          items[idx] = Object.assign({}, items[idx], { category: cat });
+          persist(); render();
+        });
+      }
+
+      section.appendChild(row);
+      grid.appendChild(section);
+    });
   }
 
   function buildTile(item, idx) {
@@ -637,14 +938,11 @@
 
     var name = document.createElement("div");
     name.className = "name"; name.textContent = item.name; name.title = item.desc || item.url;
-    name.addEventListener("dblclick", function (e) {
-      if (!edit) return;
-      e.stopPropagation(); startRename(item, name);
-    });
 
     el.title = item.desc || ""; el.appendChild(icon); el.appendChild(del); el.appendChild(name);
     el.addEventListener("click", function (e) {
-      if (edit || e.target === del) return;
+      if (e.target === del) return;
+      if (edit) { openEditModal(item); return; }
       window.open(item.url, "_blank", "noopener");
     });
     el.draggable = false; attachDrag(el, item);
@@ -671,25 +969,11 @@
       var from = items.findIndex(function (x) { return x.id === srcId; });
       var to   = items.findIndex(function (x) { return x.id === item.id; });
       if (from === -1 || to === -1) return;
-      var moved = items.splice(from, 1)[0]; items.splice(to, 0, moved);
+      var moved = items.splice(from, 1)[0];
+      // 拖入不同分区时同步更新 category
+      if (moved.category !== item.category) moved = Object.assign({}, moved, { category: item.category });
+      items.splice(to, 0, moved);
       persist(); render();
-    });
-  }
-
-  function startRename(item, nameEl) {
-    var input = document.createElement("input");
-    input.type = "text"; input.className = "name-input"; input.value = item.name;
-    nameEl.replaceWith(input); input.focus(); input.select();
-    var committed = false;
-    function finish(commit) {
-      if (committed) return; committed = true;
-      if (commit) { var v = input.value.trim(); if (v && v !== item.name) { item.name = v; persist(); } }
-      render();
-    }
-    input.addEventListener("blur", function () { finish(true); });
-    input.addEventListener("keydown", function (e) {
-      if (e.key === "Enter")  { e.preventDefault(); finish(true); }
-      if (e.key === "Escape") { e.preventDefault(); finish(false); }
     });
   }
 
@@ -716,19 +1000,45 @@
     render();
   }
 
-  // -------- add modal --------
-  function openAddModal() {
-    mTitle.textContent = "添加链接"; mUrl.value = ""; mName.value = "";
+  // -------- add / edit modal --------
+  function openAddModal(cat) {
+    editingItem = null;
+    addCategory = cat || "ai";
+    mTitle.textContent = "添加链接";
+    mUrl.value = ""; mName.value = ""; mDesc.value = "";
+    mCat.value = addCategory;
+    mUrl.disabled = false;
     modalAdd.classList.add("show");
     setTimeout(function () { mUrl.focus(); }, 50);
   }
-  function closeAddModal() { modalAdd.classList.remove("show"); }
+  function openEditModal(item) {
+    editingItem = item;
+    addCategory = item.category || "ai";
+    mTitle.textContent = "编辑链接";
+    mUrl.value  = item.url  || "";
+    mName.value = item.name || "";
+    mDesc.value = item.desc || "";
+    mCat.value  = item.category || "ai";
+    mUrl.disabled = false;
+    modalAdd.classList.add("show");
+    setTimeout(function () { mName.focus(); mName.select(); }, 50);
+  }
+  function closeAddModal() { modalAdd.classList.remove("show"); editingItem = null; }
   function submitAdd() {
     var url = normalizeUrl(mUrl.value);
     if (!url) { mUrl.focus(); mUrl.style.borderColor = "var(--danger)"; return; }
     mUrl.style.borderColor = "";
     var name = mName.value.trim() || defaultNameOf(url);
-    items.push({ id: uid(), url: url, name: name });
+    var desc = mDesc.value.trim();
+    var cat  = mCat.value || "ai";
+    if (editingItem) {
+      editingItem.url = url; editingItem.name = name; editingItem.desc = desc;
+      editingItem.category = cat;
+      editingItem.iconSvg = null;
+      editingItem = null;
+    } else {
+      items.push({ id: uid(), url: url, name: name, desc: desc, category: cat });
+    }
     persist(); render(); closeAddModal();
   }
 
@@ -780,12 +1090,12 @@
   // 优先级：localStorage（本地编辑） > EMBEDDED_ITEMS（已发布） > DEFAULT_ITEMS（初始默认）
   var cached = loadLocal();
   if (cached.length) {
-    items = applyIcons(cached);
+    items = applyCategory(applyIcons(cached));
   } else if (EMBEDDED_ITEMS && EMBEDDED_ITEMS.length) {
-    items = applyIcons(EMBEDDED_ITEMS);
+    items = applyCategory(applyIcons(EMBEDDED_ITEMS));
     saveLocal(items);
   } else {
-    items = cloneDefaults();
+    items = applyCategory(cloneDefaults());
   }
   setStatus("本地模式", "ok");
   render();
