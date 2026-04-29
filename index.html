@@ -602,10 +602,16 @@
   var CATEGORIES      = ["ai", "ref", "web"];
   var CATEGORY_LABELS = { ai: "辅助智能体", ref: "参考资料", web: "常用网站" };
   var CATEGORY_BY_ID  = {
-    "i_01x3kiu": "ai", "i_cmpw1v2": "ai", "i_f9sqa8q": "ai",
-    "i_tkm8m8c": "ai", "i_wmmdepx": "ai",
-    "i_muezk62": "ref","i_5bkr1rk": "ref","i_8sevjvk": "ref",
-    "i_r1gmgfb": "web"
+    "i_01x3kiu": "ai",  // 脑洞发散
+    "i_cmpw1v2": "ai",  // 产品蓝图
+    "i_f9sqa8q": "ai",  // AI功能设计
+    "i_r46kdfn": "ai",  // 测试模型
+    "i_8sevjvk": "ref", // API获取
+    "i_wmmdepx": "ref", // 一键提示词
+    "i_kf0q4vj": "ref", // 五一营教程
+    "i_tkm8m8c": "web", // Gemini
+    "i_muezk62": "web", // Github
+    "i_5bkr1rk": "web"  // Vercel
   };
   function applyCategory(list) {
     return (list || []).map(function(it) {
