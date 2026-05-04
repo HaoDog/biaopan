@@ -1101,8 +1101,25 @@
   tick(); setInterval(tick, 30000);
 
   // 优先级：localStorage（本地编辑） > EMBEDDED_ITEMS（已发布） > DEFAULT_ITEMS（初始默认）
+  // 自动合并：把 EMBEDDED_ITEMS 里有但 localStorage 里没有的新条目追加进去
+  function mergeNewItems(localList, embeddedList) {
+    if (!embeddedList || !embeddedList.length) return localList;
+    var localIds = {};
+    localList.forEach(function(it) { if (it) localIds[it.id] = true; });
+    var added = false;
+    embeddedList.forEach(function(it) {
+      if (it && !localIds[it.id]) {
+        localList.push(it);
+        added = true;
+      }
+    });
+    if (added) saveLocal(localList);
+    return localList;
+  }
+
   var cached = loadLocal();
   if (cached.length) {
+    cached = mergeNewItems(cached, EMBEDDED_ITEMS);
     items = applyCategory(applyIcons(cached));
   } else if (EMBEDDED_ITEMS && EMBEDDED_ITEMS.length) {
     items = applyCategory(applyIcons(EMBEDDED_ITEMS));
