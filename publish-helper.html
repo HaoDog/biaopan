@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>发布助手 · 上线前体检</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
+                 "Helvetica Neue", Arial, sans-serif;
+    background: #f0f2f7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px 60px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 2px 24px rgba(0,0,0,0.08);
+    max-width: 760px;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .card-header {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    padding: 28px 36px 24px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .header-icon {
+    width: 48px; height: 48px; flex-shrink: 0;
+    background: rgba(255,255,255,0.2);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .header-text h1 {
+    font-size: 20px; font-weight: 700; letter-spacing: -0.3px;
+  }
+  .header-text p {
+    font-size: 13px; opacity: 0.82; margin-top: 3px;
+  }
+
+  .card-body {
+    padding: 32px 36px;
+  }
+
+  .tip {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  .tip strong { color: #374151; }
+
+  .prompt-box {
+    background: #f8f9fc;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 24px 26px;
+    font-family: "SF Mono", "Fira Code", "Consolas", "Menlo", monospace;
+    font-size: 13.5px;
+    line-height: 1.85;
+    color: #1f2937;
+    white-space: pre-wrap;
+    word-break: break-word;
+    user-select: all;
+    cursor: text;
+    position: relative;
+  }
+
+  .section-tag {
+    display: inline-block;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border-radius: 6px;
+    padding: 1px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: -apple-system, sans-serif;
+    letter-spacing: 0.3px;
+  }
+
+  .copy-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    margin-top: 22px;
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: #fff;
+    border: none;
+    border-radius: 13px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: opacity .18s, transform .12s;
+  }
+  .copy-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .copy-btn:active { transform: translateY(0); opacity: 1; }
+  .copy-btn.ok {
+    background: linear-gradient(135deg, #10b981, #059669);
+  }
+
+  .back-link {
+    margin-top: 28px;
+    font-size: 13px;
+    color: #9ca3af;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: color .15s;
+  }
+  .back-link:hover { color: #6366f1; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card-header">
+    <div class="header-icon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 12l2 2 4-4"/>
+        <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>发布助手 · 上线前体检</h1>
+      <p>一键复制提示词 → 粘贴给 AI → 逐条修正 → 放心上线</p>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <p class="tip">复制下面的提示词，粘贴给 AI（如 Cursor、Claude、ChatGPT），让它帮你做上线前的 4 项自动体检。<strong>不改已有功能，只查漏补缺。</strong></p>
+
+    <div class="prompt-box" id="promptText">请帮我做一次"上线前体检"，按下面 4 项逐条检查并修正项目，但不要改变任何已有功能：
+
+<span class="section-tag">1. 空文件清理</span>
+扫所有 .ts/.tsx/.js/.jsx 文件，找 0 字节的。
+能根据上下文补全就补全；不能就至少加：
+  export default () =&gt; null;
+  export const 文件名PascalCase = () =&gt; null;
+
+<span class="section-tag">2. import / export 一致</span>
+确认所有 import 的具体名字在被导入文件里都有 export。
+找不到就补 export 或改成 default 导入。
+不要让任何 import 指向不存在的导出。
+
+<span class="section-tag">3. AI 调用规范</span>
+如果代码里有 fetch('/api/xxx')：
+  · body 里必须含 messages 数组（OpenAI 标准格式），形如：
+    body: JSON.stringify({ messages: [{role:'user', content:'xxx'}] })
+  · URL 用 /api/chat 最稳；其它 /api/respond /api/ai/chat 等花名虽然
+    平台能自动认（前提是 body 有 messages），但用标准名最不会出错。
+  · 响应处理用 OpenAI 标准格式：data.choices[0].message.content
+    不要用 data.reply / data.text 等自定义字段名。
+  · 不要用 OpenAI SDK 默认 baseURL，必须显式设：
+      const openai = new OpenAI({
+        baseURL: 'https://explorer.nxcode.net/api/gateway/v1',
+        apiKey: 'ej-sk-...',
+        dangerouslyAllowBrowser: true,
+      });
+
+<span class="section-tag">4. 后端依赖警告</span>
+如果项目需要"多人共享数据"或"持久存储"
+（聊天室、玩家排行榜、商品市场等），
+请告诉我（不要自动改）。这种功能我们的部署平台暂不支持，需要单独说明。
+
+每项做完后告诉我"完成"或"无需调整"，最后再生成 zip 让我下载。</div>
+
+    <button class="copy-btn" id="copyBtn" onclick="copyPrompt()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+      一键复制提示词
+    </button>
+  </div>
+</div>
+
+<a href="/" class="back-link">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M19 12H5M12 5l-7 7 7 7"/>
+  </svg>
+  返回工具箱
+</a>
+
+<script>
+var PROMPT_TEXT = `请帮我做一次"上线前体检"，按下面 4 项逐条检查并修正项目，但不要改变任何已有功能：
+
+【1. 空文件清理】
+扫所有 .ts/.tsx/.js/.jsx 文件，找 0 字节的。
+能根据上下文补全就补全；不能就至少加：
+  export default () => null;
+  export const 文件名PascalCase = () => null;
+
+【2. import / export 一致】
+确认所有 import 的具体名字在被导入文件里都有 export。
+找不到就补 export 或改成 default 导入。
+不要让任何 import 指向不存在的导出。
+
+【3. AI 调用规范】
+如果代码里有 fetch('/api/xxx')：
+  - body 里必须含 messages 数组（OpenAI 标准格式），形如：
+    body: JSON.stringify({ messages: [{role:'user', content:'xxx'}] })
+  - URL 用 /api/chat 最稳；其它 /api/respond /api/ai/chat 等花名虽然
+    平台能自动认（前提是 body 有 messages），但用标准名最不会出错。
+  - 响应处理用 OpenAI 标准格式：data.choices[0].message.content
+    不要用 data.reply / data.text 等自定义字段名。
+  - 不要用 OpenAI SDK 默认 baseURL，必须显式设：
+      const openai = new OpenAI({
+        baseURL: 'https://explorer.nxcode.net/api/gateway/v1',
+        apiKey: 'ej-sk-...',
+        dangerouslyAllowBrowser: true,
+      });
+
+【4. 后端依赖警告】
+如果项目需要"多人共享数据"或"持久存储"（聊天室、玩家排行榜、商品市场等），
+请告诉我（不要自动改）。这种功能我们的部署平台暂不支持，需要单独说明。
+
+每项做完后告诉我"完成"或"无需调整"，最后再生成 zip 让我下载。`;
+
+function copyPrompt() {
+  var btn = document.getElementById('copyBtn');
+  navigator.clipboard.writeText(PROMPT_TEXT).then(function() {
+    btn.classList.add('ok');
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> 已复制！Ctrl+V 直接粘贴';
+    setTimeout(function() {
+      btn.classList.remove('ok');
+      btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> 一键复制提示词';
+    }, 3000);
+  }).catch(function() {
+    // 降级：选中文本
+    var box = document.getElementById('promptText');
+    var sel = window.getSelection();
+    var range = document.createRange();
+    range.selectNodeContents(box);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    btn.textContent = '已选中，请按 Ctrl+C 复制';
+  });
+}
+</script>
+</body>
+</html>
